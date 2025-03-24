@@ -3,6 +3,7 @@ import mediapipe as mp
 import numpy as np
 import time
 import threading
+from keyboard_triggers import trigger_up, trigger_down, trigger_left, trigger_right
 
 class MovementDetector:
     def __init__(self):
@@ -84,6 +85,14 @@ class MovementDetector:
                 movement = self.detect_movement(results.pose_landmarks)
                 if movement:
                     print(f"Movement detected: {movement}")
+                    if movement == "Jump":
+                        trigger_up()
+                    elif movement == "Step Right":
+                        trigger_right()
+                    elif movement == "Step Left":
+                        trigger_left()
+                    elif movement == "Bend":
+                            trigger_down()
                     # cv2.putText(image, movement, (50, 50), 
                     #             cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             else:
@@ -101,11 +110,24 @@ class MovementDetector:
                 
         cap.release()
         cv2.destroyAllWindows()
+    
+    def update_location(self, landmarks, landmark_points):
+        self.stable_position = landmark_points
+        self.base_height = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
+        self.base_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
+        # Calculate base hip-knee angle for bend detection
+        self.base_hip_knee_angle = self._calculate_hip_knee_angle(landmarks)
+        # print("\n===============================================")
+        # print("REFERENCE POSITION ESTABLISHED - START MOVING!")
+        # print("===============================================\n")
+        # print(f"Base height (nose): {self.base_height:.4f}")
+        # print(f"Base hip x: {self.base_hip_x:.4f}")
+        # print(f"Base hip-knee angle: {self.base_hip_knee_angle:.4f}")
         
     def detect_movement(self, landmarks):
         if landmarks is None:
             return None
-            
+        # print(self.frame_counter)
         # Convert landmarks to numpy array for easier calculations
         landmark_points = np.array([[lm.x, lm.y, lm.z] for lm in landmarks.landmark])
         
@@ -131,17 +153,7 @@ class MovementDetector:
                 self.stable_counter = 0
             
             if self.stable_counter >= self.required_stable_frames:
-                self.stable_position = landmark_points
-                self.base_height = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
-                self.base_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
-                # Calculate base hip-knee angle for bend detection
-                self.base_hip_knee_angle = self._calculate_hip_knee_angle(landmarks)
-                print("\n===============================================")
-                print("REFERENCE POSITION ESTABLISHED - START MOVING!")
-                print("===============================================\n")
-                print(f"Base height (nose): {self.base_height:.4f}")
-                print(f"Base hip x: {self.base_hip_x:.4f}")
-                print(f"Base hip-knee angle: {self.base_hip_knee_angle:.4f}")
+                self.update_location(landmarks, landmark_points)
             
             self.prev_landmarks = landmark_points
             return None
@@ -178,6 +190,8 @@ class MovementDetector:
         jump_diff = self.base_height - nose_y
         if jump_diff > self.jump_threshold:
             self.last_detection_time = current_time
+            self.update_location(landmarks, landmark_points)
+
             return "Jump"
         
         # Detect step right and left
@@ -185,17 +199,22 @@ class MovementDetector:
         step_right_diff = left_hip_x - self.base_hip_x
         if step_right_diff > self.step_threshold:
             self.last_detection_time = current_time
+            self.update_location(landmarks, landmark_points)
+
             return "Step Right"
             
         step_left_diff = self.base_hip_x - left_hip_x
         if step_left_diff > self.step_threshold:
             self.last_detection_time = current_time
+            self.update_location(landmarks, landmark_points)
+
             return "Step Left"
         
         # Check if we have a bend result from the async thread
         if self.bend_result:
             result = self.bend_result
             self.bend_result = None
+            self.update_location(landmarks, landmark_points)
             return result
             
         # Start async bend detection if not already running
@@ -228,7 +247,7 @@ class MovementDetector:
                 elif len(self.bend_check):
                     if len(self.bend_check) == 1:
                         self.bend_check.append(current_time)
-                    if self.bend_check[1] - self.bend_check[0] > 1:
+                    if self.bend_check[1] - self.bend_check[0] > 0.4:
                         self.bend_check = None
                         self.last_detection_time = current_time
                         self.bend_result = "Bend"
