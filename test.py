@@ -1,187 +1,270 @@
+import cv2
+import mediapipe as mp
+import numpy as np
 import time
-import sys
-import random
+from typing import Optional, Tuple, List, Dict
+from dataclasses import dataclass
 
-try:
-    import win32api
-except ImportError:
-    print("Required package not found. Installing pywin32...")
-    import subprocess
-    subprocess.check_call([sys.executable, "-m", "pip", "install", "pywin32"])
-    print("Please restart the script now.")
-    sys.exit(1)
+@dataclass
+class MovementConfig:
+    """Configuration parameters for movement detection"""
+    min_detection_confidence: float = 0.5
+    min_tracking_confidence: float = 0.5
+    required_stable_frames: int = 15
+    jump_threshold: float = 0.025
+    step_threshold: float = 0.02
+    bend_threshold: float = 0.1
+    cooldown_period: float = 1.0
+    stability_threshold: float = 0.01
 
-# Define key codes for all arrow keys
-VK_UP = 0x26     # UP arrow
-VK_DOWN = 0x28   # DOWN arrow
-VK_LEFT = 0x25   # LEFT arrow
-VK_RIGHT = 0x27  # RIGHT arrow
-KEYEVENTF_KEYUP = 0x0002
-
-# Create a mapping of keys for easy reference
-key_names = {
-    VK_UP: "UP",
-    VK_DOWN: "DOWN",
-    VK_LEFT: "LEFT",
-    VK_RIGHT: "RIGHT"
-}
-
-def send_key_event_win32(key, press_type):
-    """
-    Send key events using win32api - approach that works for game compatibility
-    """
-    if press_type == "down":
-        win32api.keybd_event(key, win32api.MapVirtualKey(key, 0), 0, 0)
-    elif press_type == "up":
-        win32api.keybd_event(key, win32api.MapVirtualKey(key, 0), KEYEVENTF_KEYUP, 0)
-
-def press_and_release_win32(key):
-    """Press and release a key using win32api"""
-    send_key_event_win32(key, "down")
-    time.sleep(0.05)  # Small delay between press and release
-    send_key_event_win32(key, "up")
-
-def test_specific_key(key):
-    """Test a specific arrow key"""
-    print(f"Pressing {key_names[key]} key")
-    press_and_release_win32(key)
-
-def main():
-    print("\n=== ARROW KEYS TESTER FOR GAMES ===")
-    print("This script uses win32api to send arrow key inputs to games")
-    print("\nOptions:")
-    print("1. Test UP key")
-    print("2. Test DOWN key")
-    print("3. Test LEFT key")
-    print("4. Test RIGHT key")
-    print("5. Test all keys in sequence")
-    print("6. Test random keys")
-    print("7. Continuous mode (one key repeatedly)")
-    print("8. Exit")
+class PoseDetector:
+    """Handles MediaPipe pose detection and landmark processing"""
     
-    choice = input("\nEnter your choice (1-8): ")
-    
-    if choice == "1":
-        test_key_repeatedly(VK_UP)
-    elif choice == "2":
-        test_key_repeatedly(VK_DOWN)
-    elif choice == "3":
-        test_key_repeatedly(VK_LEFT)
-    elif choice == "4":
-        test_key_repeatedly(VK_RIGHT)
-    elif choice == "5":
-        test_keys_in_sequence()
-    elif choice == "6":
-        test_random_keys()
-    elif choice == "7":
-        continuous_mode()
-    elif choice == "8":
-        print("Exiting...")
-        sys.exit(0)
-    else:
-        print("Invalid choice. Please try again.")
-        main()
+    def __init__(self, config: MovementConfig):
+        self.mp_pose = mp.solutions.pose
+        self.pose = self.mp_pose.Pose(
+            min_detection_confidence=config.min_detection_confidence,
+            min_tracking_confidence=config.min_tracking_confidence
+        )
+        self.mp_drawing = mp.solutions.drawing_utils
+        
+    def process_frame(self, image: np.ndarray) -> Optional[mp.solutions.pose.PoseLandmark]:
+        """Process a single frame and return pose landmarks"""
+        rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
+        results = self.pose.process(rgb_image)
+        return results.pose_landmarks
+        
+    def draw_landmarks(self, image: np.ndarray, landmarks: mp.solutions.pose.PoseLandmark) -> None:
+        """Draw pose landmarks on the image"""
+        self.mp_drawing.draw_landmarks(
+            image, 
+            landmarks, 
+            self.mp_pose.POSE_CONNECTIONS
+        )
 
-def test_key_repeatedly(key):
-    """Test a specific key repeatedly"""
-    print(f"\nStarting in 5 seconds. Will press {key_names[key]} key every second.")
-    print("Press Ctrl+C to stop.")
-    time.sleep(5)
+class MovementAnalyzer:
+    """Analyzes pose landmarks to detect specific movements"""
     
-    try:
-        while True:
-            test_specific_key(key)
-            time.sleep(0.95)  # Total ~1 second including the 0.05s delay
-    except KeyboardInterrupt:
-        print("\nStopped by user")
-        main()
+    def __init__(self, config: MovementConfig, mp_pose):
+        self.config = config
+        self.mp_pose = mp_pose
+        self.stable_position: Optional[np.ndarray] = None
+        self.prev_landmarks: Optional[np.ndarray] = None
+        self.stable_counter: int = 0
+        self.base_height: Optional[float] = None
+        self.base_hip_x: Optional[float] = None
+        self.last_detection_time: float = 0
+        self.frame_counter: int = 0
 
-def test_keys_in_sequence():
-    """Test all arrow keys in sequence"""
-    print("\nStarting in 5 seconds. Will press all arrow keys in sequence.")
-    print("Press Ctrl+C to stop.")
-    time.sleep(5)
-    
-    keys = [VK_UP, VK_RIGHT, VK_DOWN, VK_LEFT]
-    try:
-        while True:
-            for key in keys:
-                test_specific_key(key)
-                time.sleep(0.95)
-    except KeyboardInterrupt:
-        print("\nStopped by user")
-        main()
+        self.is_stable: bool = True
+        self.is_in_motion: bool = False
+        
+        # Motion tracking
+        self.motion_start_time: float = 0
+        self.motion_direction: Optional[str] = None
+        self.hip_velocity_history: List[float] = []
+        self.max_velocity_history: int = 5  # Keep track of last 5 velocities
+        self.debug: bool = True  # Enable debug logging
+        
+    def update_location(self, landmarks: mp.solutions.pose.PoseLandmark, landmark_points: np.ndarray) -> None:
+        """Update the reference position for movement detection"""
+        self.stable_position = landmark_points
+        self.base_height = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
+        self.base_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
+        if self.debug:
+            print(f"[DEBUG] Updated reference position - Base hip X: {self.base_hip_x:.4f}")
+        
+    def update_is_stable(self, landmark_points: np.ndarray) -> bool:
+        """Check if the current position is stable based on left hip position"""
+        if self.prev_landmarks is None:
+            self.prev_landmarks = landmark_points
 
-def test_random_keys():
-    """Test random arrow keys"""
-    print("\nStarting in 5 seconds. Will press random arrow keys.")
-    print("Press Ctrl+C to stop.")
-    time.sleep(5)
-    
-    keys = [VK_UP, VK_RIGHT, VK_DOWN, VK_LEFT]
-    try:
-        while True:
-            key = random.choice(keys)
-            test_specific_key(key)
-            time.sleep(0.95)
-    except KeyboardInterrupt:
-        print("\nStopped by user")
-        main()
+        # Get left hip coordinates (index 23 in MediaPipe pose landmarks)
+        current_hip = landmark_points[23]  # LEFT_HIP
+        prev_hip = self.prev_landmarks[23]
+        
+        # Calculate distance between current and previous hip positions
+        distance = np.linalg.norm(current_hip - prev_hip)
+        self.prev_landmarks = landmark_points
+        print(f"hip distance: {distance:.4f}")
+        
+        if distance < self.config.stability_threshold:
+            self.stable_counter += 1
+            if self.debug and self.stable_counter % 5 == 0:  # Log every 5th frame
+                print(f"[DEBUG] Stability counter: {self.stable_counter}/{self.config.required_stable_frames}")
+            self.is_stable = self.stable_counter >= self.config.required_stable_frames
+        else:
+            if self.debug and self.stable_counter > 0:
+                print(f"[DEBUG] Reset stability counter. Hip distance: {distance:.4f}")
+            self.stable_counter = 0
+            self.is_stable = False
 
-def continuous_mode():
-    """Continuous mode menu"""
-    print("\nContinuous Mode - Choose a key to press repeatedly:")
-    print("1. UP key")
-    print("2. DOWN key")
-    print("3. LEFT key")
-    print("4. RIGHT key")
-    print("5. Go back")
-    
-    choice = input("\nEnter your choice (1-5): ")
-    
-    if choice == "1":
-        interval = get_interval()
-        continuous_key_press(VK_UP, interval)
-    elif choice == "2":
-        interval = get_interval()
-        continuous_key_press(VK_DOWN, interval)
-    elif choice == "3":
-        interval = get_interval()
-        continuous_key_press(VK_LEFT, interval)
-    elif choice == "4":
-        interval = get_interval()
-        continuous_key_press(VK_RIGHT, interval)
-    elif choice == "5":
-        main()
-    else:
-        print("Invalid choice.")
-        continuous_mode()
 
-def get_interval():
-    """Get interval time from user"""
-    try:
-        interval = float(input("\nEnter interval between keypresses (seconds, e.g. 0.5): "))
-        if interval <= 0:
-            print("Interval must be positive. Using default of 1 second.")
-            return 1.0
-        return interval
-    except ValueError:
-        print("Invalid input. Using default of 1 second.")
-        return 1.0
+    def detect_movement(self, landmarks: mp.solutions.pose.PoseLandmark) -> Optional[str]:
+        """Detect and return the type of movement"""
+        if landmarks is None:
+            return None
+            
+        landmark_points = np.array([[lm.x, lm.y, lm.z] for lm in landmarks.landmark])
+        current_time = time.time()
+        self.frame_counter += 1
+        
+        self.update_is_stable(landmark_points)
+        # Establish stable position if needed
+        if self.is_stable:
+            self.update_location(landmarks, landmark_points)
+            if(self.is_in_motion):
+                self.is_in_motion = False
+            return None
+        
+        if(self.is_in_motion):
+            return None
+            
+        # Get current positions
+        nose_y = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
+        left_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
+        
+        # Update motion tracking
+        # self._update_motion_state(left_hip_x, current_time)
+        
+        # Check if base positions are initialized
+        if self.base_height is None or self.base_hip_x is None:
+            return None
+        
+        # Jump detection
+        jump_diff = self.base_height - nose_y
+        if jump_diff > self.config.jump_threshold:
+            self.last_detection_time = current_time
+            return "Jump"
+            
+        # Bend detection
+        bend_diff = nose_y - self.base_height
+        if bend_diff > self.config.bend_threshold:
+            self.last_detection_time = current_time
+            return "Bend"
+            
+        # Step detection with improved logic
+        step_right_diff = left_hip_x - self.base_hip_x
+        step_left_diff = self.base_hip_x - left_hip_x
+        print(f"step_right_diff: {step_right_diff:.4f}, step_left_diff: {step_left_diff:.4f}")
+        
+        if self.debug and self.frame_counter % 5 == 0:  # Log every 5th frame
+            print(f"[DEBUG] Step differences - Right: {step_right_diff:.4f}, Left: {step_left_diff:.4f}")
+            print(f"[DEBUG] Step threshold: {self.config.step_threshold:.4f}")
+        
+        # Only detect step if we're not already in motion in that direction
+        if step_right_diff > self.config.step_threshold:
+            if self.debug:
+                print(f"[DEBUG] Step Right detected - Diff: {step_right_diff:.4f}")
+            return "Step Right"
+        elif step_left_diff > self.config.step_threshold:
+            if self.debug:
+                print(f"[DEBUG] Step Left detected - Diff: {step_left_diff:.4f}")
+            return "Step Left"
+            
+        return None
 
-def continuous_key_press(key, interval):
-    """Press a key continuously with custom interval"""
-    print(f"\nStarting in 5 seconds. Will press {key_names[key]} key every {interval} seconds.")
-    print("Press Ctrl+C to stop.")
-    time.sleep(5)
+class MovementDetector:
+    """Main class for movement detection using camera input"""
     
-    try:
-        while True:
-            test_specific_key(key)
-            time.sleep(interval - 0.05 if interval > 0.05 else 0)
-    except KeyboardInterrupt:
-        print("\nStopped by user")
-        main()
+    def __init__(self, config: Optional[MovementConfig] = None):
+        self.config = config or MovementConfig()
+        self.pose_detector = PoseDetector(self.config)
+        self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose)
+        self.frame_counter = 0
+        
+    def process_movement(self, movement: str) -> None:
+        """Log detected movement to console"""
+        print(f"Movement detected: {movement}")
+        self.movement_analyzer.is_in_motion = True
+            
+    def start_camera(self, video_path: str) -> None:
+        """Start processing video input for movement detection"""
+        cap = cv2.VideoCapture(video_path)
+        
+        if not cap.isOpened():
+            raise ValueError(f"Could not open video file: {video_path}")
+            
+        # Get video properties
+        fps = cap.get(cv2.CAP_PROP_FPS)
+        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+        duration = total_frames / fps
+        
+        print(f"Video opened successfully!")
+        print(f"Video properties: {fps:.2f} FPS, {total_frames} frames, {duration:.2f} seconds")
+        print("Processing video for movement detection...")
+        
+        last_log_time = 0
+        log_interval = 0.1  # Log every 100 milliseconds
+        
+        try:
+            while True:
+                # Read a frame
+                ret, image = cap.read()
+                
+                # If frame is not read correctly, check if we've reached the end
+                if not ret:
+                    # Check if we've reached the end of the video
+                    if cap.get(cv2.CAP_PROP_POS_FRAMES) >= total_frames:
+                        print("End of video reached")
+                        break
+                    else:
+                        print("Error reading frame, continuing...")
+                        continue
+                
+                # Calculate current time in video
+                current_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                current_time = current_frame / fps
+                
+                # Log duration every 100 milliseconds
+                if current_time - last_log_time >= log_interval:
+                    print(f"Video time: {current_time:.1f}/{duration:.1f} seconds ({current_frame}/{total_frames} frames)")
+                    if landmarks:
+                        nose = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.NOSE]
+                        left_hip = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.LEFT_HIP]
+                        print(f"  Nose coordinates: x={nose.x:.3f}, y={nose.y:.3f}, z={nose.z:.3f}")
+                        print(f"  Left hip coordinates: x={left_hip.x:.3f}, y={left_hip.y:.3f}, z={left_hip.z:.3f}")
+                    last_log_time = current_time
+                
+                # Flip image horizontally for mirror effect
+                image = cv2.flip(image, 1)
+                
+                # Process frame
+                landmarks = self.pose_detector.process_frame(image)
+                
+                if landmarks:
+                    # Draw landmarks
+                    self.pose_detector.draw_landmarks(image, landmarks)
+                    
+                    # Detect movement
+                    movement = self.movement_analyzer.detect_movement(landmarks)
+                    if movement:
+                        # print(f"Movement detected: {movement}")
+                        self.process_movement(movement)
+                else:
+                    if self.frame_counter % 30 == 0:
+                        print("No pose landmarks detected. Make sure your full body is visible.")
+                
+                # Display frame
+                cv2.imshow('Movement Detection', image)
+                
+                # Wait for Enter key press
+                print("\nPress Enter to continue to next frame (or ESC to exit)...")
+                key = cv2.waitKey(0) & 0xFF
+                if key == 27:  # ESC key
+                    print("Video playback interrupted by user")
+                    break
+                
+                self.frame_counter += 1
+                
+        except Exception as e:
+            print(f"An error occurred: {str(e)}")
+        finally:
+            cap.release()
+            cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    main()
+    detector = MovementDetector()
+    video_path = "moves_videos/step_left_right.mp4"
+    # video_path = "moves_videos/step_right_short.mp4"
+    detector.start_camera(video_path) 
