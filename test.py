@@ -15,7 +15,10 @@ class MovementConfig:
     step_threshold: float = 0.02
     bend_threshold: float = 0.1
     cooldown_period: float = 1.0
-    stability_threshold: float = 0.01
+    stability_threshold: float = 0.02
+
+    num_frames_to_check: int = 5
+    
 
 class PoseDetector:
     """Handles MediaPipe pose detection and landmark processing"""
@@ -49,7 +52,7 @@ class MovementAnalyzer:
         self.config = config
         self.mp_pose = mp_pose
         self.stable_position: Optional[np.ndarray] = None
-        self.prev_landmarks: Optional[np.ndarray] = None
+        self.prev_landmarks: List[Optional[np.ndarray]] = None
         self.stable_counter: int = 0
         self.base_height: Optional[float] = None
         self.base_hip_x: Optional[float] = None
@@ -60,10 +63,6 @@ class MovementAnalyzer:
         self.is_in_motion: bool = False
         
         # Motion tracking
-        self.motion_start_time: float = 0
-        self.motion_direction: Optional[str] = None
-        self.hip_velocity_history: List[float] = []
-        self.max_velocity_history: int = 5  # Keep track of last 5 velocities
         self.debug: bool = True  # Enable debug logging
         
     def update_location(self, landmarks: mp.solutions.pose.PoseLandmark, landmark_points: np.ndarray) -> None:
@@ -71,31 +70,39 @@ class MovementAnalyzer:
         self.stable_position = landmark_points
         self.base_height = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
         self.base_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
-        if self.debug:
-            print(f"[DEBUG] Updated reference position - Base hip X: {self.base_hip_x:.4f}")
+        # if self.debug:
+        #     print(f"[DEBUG] Updated reference position - Base hip X: {self.base_hip_x:.4f}")
+
+    def get_points_distance(self, point_num: int, type_point_index: int) -> float:
+        current_point = self.prev_landmarks[0][point_num][type_point_index]
+        prev_point = self.prev_landmarks[self.config.num_frames_to_check - 1][point_num][type_point_index]
+        return np.linalg.norm(current_point - prev_point)
         
     def update_is_stable(self, landmark_points: np.ndarray) -> bool:
-        """Check if the current position is stable based on left hip position"""
+        """Check if the current position is stable based on both feet positions"""
         if self.prev_landmarks is None:
-            self.prev_landmarks = landmark_points
+            self.prev_landmarks = [landmark_points] * self.config.num_frames_to_check
+        else:
+            self.prev_landmarks.insert(0, landmark_points)
+            self.prev_landmarks.pop()
+            
+        # Calculate distance betself.prev_landmarks[0]ween current and previous positions for both feet
+        left_foot_distance = self.get_points_distance(32, 0)
+        right_foot_distance = self.get_points_distance(31, 0)
+        
+        
 
-        # Get left hip coordinates (index 23 in MediaPipe pose landmarks)
-        current_hip = landmark_points[23]  # LEFT_HIP
-        prev_hip = self.prev_landmarks[23]
+        print(f"Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
         
-        # Calculate distance between current and previous hip positions
-        distance = np.linalg.norm(current_hip - prev_hip)
-        self.prev_landmarks = landmark_points
-        print(f"hip distance: {distance:.4f}")
-        
-        if distance < self.config.stability_threshold:
+        # Position is considered stable only if both feet are stable
+        if left_foot_distance < self.config.stability_threshold and right_foot_distance < self.config.stability_threshold:
             self.stable_counter += 1
-            if self.debug and self.stable_counter % 5 == 0:  # Log every 5th frame
+            if self.debug:  # Log every 5th frame
                 print(f"[DEBUG] Stability counter: {self.stable_counter}/{self.config.required_stable_frames}")
             self.is_stable = self.stable_counter >= self.config.required_stable_frames
         else:
             if self.debug and self.stable_counter > 0:
-                print(f"[DEBUG] Reset stability counter. Hip distance: {distance:.4f}")
+                print(f"[DEBUG] Reset stability counter. Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
             self.stable_counter = 0
             self.is_stable = False
 
@@ -112,7 +119,7 @@ class MovementAnalyzer:
         self.update_is_stable(landmark_points)
         # Establish stable position if needed
         if self.is_stable:
-            self.update_location(landmarks, landmark_points)
+            # self.update_location(landmarks, landmark_points)
             if(self.is_in_motion):
                 self.is_in_motion = False
             return None
@@ -121,45 +128,52 @@ class MovementAnalyzer:
             return None
             
         # Get current positions
-        nose_y = landmarks.landmark[self.mp_pose.PoseLandmark.NOSE].y
-        left_hip_x = landmarks.landmark[self.mp_pose.PoseLandmark.LEFT_HIP].x
+        nose_y = self.get_points_distance(self.mp_pose.PoseLandmark.NOSE, 0)
+        left_foot_distance = self.get_points_distance(32, 0)
+        right_foot_distance = self.get_points_distance(31, 0)
         
         # Update motion tracking
         # self._update_motion_state(left_hip_x, current_time)
         
         # Check if base positions are initialized
-        if self.base_height is None or self.base_hip_x is None:
-            return None
+        # if self.base_height is None or self.base_hip_x is None:
+        #     return None
         
         # Jump detection
-        jump_diff = self.base_height - nose_y
-        if jump_diff > self.config.jump_threshold:
-            self.last_detection_time = current_time
-            return "Jump"
+        # jump_diff = self.base_height - nose_y
+        # if jump_diff > self.config.jump_threshold:
+        #     self.last_detection_time = current_time
+        #     return "Jump"
             
-        # Bend detection
-        bend_diff = nose_y - self.base_height
-        if bend_diff > self.config.bend_threshold:
-            self.last_detection_time = current_time
-            return "Bend"
+        # # Bend detection
+        # bend_diff = nose_y - self.base_height
+        # if bend_diff > self.config.bend_threshold:
+        #     self.last_detection_time = current_time
+        #     return "Bend"
             
         # Step detection with improved logic
-        step_right_diff = left_hip_x - self.base_hip_x
-        step_left_diff = self.base_hip_x - left_hip_x
-        print(f"step_right_diff: {step_right_diff:.4f}, step_left_diff: {step_left_diff:.4f}")
+        # step_right_diff = left_hip_x - self.base_hip_x
+        # step_left_diff = self.base_hip_x - left_hip_x
+        # print(f"step_right_diff: {step_right_diff:.4f}, step_left_diff: {step_left_diff:.4f}")
         
-        if self.debug and self.frame_counter % 5 == 0:  # Log every 5th frame
-            print(f"[DEBUG] Step differences - Right: {step_right_diff:.4f}, Left: {step_left_diff:.4f}")
-            print(f"[DEBUG] Step threshold: {self.config.step_threshold:.4f}")
+        # if self.debug and self.frame_counter % 5 == 0:  # Log every 5th frame
+        #     print(f"[DEBUG] Step differences - Right: {step_right_diff:.4f}, Left: {step_left_diff:.4f}")
+        #     print(f"[DEBUG] Step threshold: {self.config.step_threshold:.4f}")
         
         # Only detect step if we're not already in motion in that direction
-        if step_right_diff > self.config.step_threshold:
+        if self.debug:  # Log every 5th frame
+            print(f"[DEBUG] Right foot distance: {right_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
+        if right_foot_distance > self.config.step_threshold:
             if self.debug:
-                print(f"[DEBUG] Step Right detected - Diff: {step_right_diff:.4f}")
+                print(f"[DEBUG] Step Right detected - Diff: {right_foot_distance:.4f}")
             return "Step Right"
-        elif step_left_diff > self.config.step_threshold:
+        
+
+        if self.debug:
+            print(f"[DEBUG] Left foot distance: {left_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
+        if left_foot_distance > self.config.step_threshold:
             if self.debug:
-                print(f"[DEBUG] Step Left detected - Diff: {step_left_diff:.4f}")
+                print(f"[DEBUG] Step Left detected - Diff: {left_foot_distance:.4f}")
             return "Step Left"
             
         return None
@@ -175,7 +189,7 @@ class MovementDetector:
         
     def process_movement(self, movement: str) -> None:
         """Log detected movement to console"""
-        print(f"Movement detected: {movement}")
+        print(f" ********** Movement detected: {movement} ********** ")
         self.movement_analyzer.is_in_motion = True
             
     def start_camera(self, video_path: str) -> None:
@@ -218,16 +232,22 @@ class MovementDetector:
                 
                 # Log duration every 100 milliseconds
                 if current_time - last_log_time >= log_interval:
-                    print(f"Video time: {current_time:.1f}/{duration:.1f} seconds ({current_frame}/{total_frames} frames)")
+                    # print(f"Video time: {current_time:.1f}/{duration:.1f} seconds ({current_frame}/{total_frames} frames)")
                     if landmarks:
                         nose = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.NOSE]
                         left_hip = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.LEFT_HIP]
-                        print(f"  Nose coordinates: x={nose.x:.3f}, y={nose.y:.3f}, z={nose.z:.3f}")
-                        print(f"  Left hip coordinates: x={left_hip.x:.3f}, y={left_hip.y:.3f}, z={left_hip.z:.3f}")
+                        # print(f"  Nose coordinates: x={nose.x:.3f}, y={nose.y:.3f}, z={nose.z:.3f}")
+                        # print(f"  Left hip coordinates: x={left_hip.x:.3f}, y={left_hip.y:.3f}, z={left_hip.z:.3f}")
                     last_log_time = current_time
                 
                 # Flip image horizontally for mirror effect
                 image = cv2.flip(image, 1)
+                
+                # Resize frame to 500px width while maintaining aspect ratio
+                height, width = image.shape[:2]
+                new_width = 500
+                new_height = int(height * (new_width / width))
+                image = cv2.resize(image, (new_width, new_height))
                 
                 # Process frame
                 landmarks = self.pose_detector.process_frame(image)
@@ -265,6 +285,8 @@ class MovementDetector:
 
 if __name__ == "__main__":
     detector = MovementDetector()
-    video_path = "moves_videos/step_left_right.mp4"
+    # video_path = "moves_videos/stability.mp4"
+    # video_path = "moves_videos/stability.mp4"
     # video_path = "moves_videos/step_right_short.mp4"
+    video_path = "moves_videos/step_left_right.mp4"
     detector.start_camera(video_path) 
