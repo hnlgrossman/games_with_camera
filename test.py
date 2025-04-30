@@ -10,14 +10,14 @@ class MovementConfig:
     """Configuration parameters for movement detection"""
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5
-    required_stable_frames: int = 15
+    required_stable_frames: int = 4
     jump_threshold: float = 0.025
     step_threshold: float = 0.02
     bend_threshold: float = 0.1
     cooldown_period: float = 1.0
     stability_threshold: float = 0.02
 
-    num_frames_to_check: int = 5
+    num_frames_to_check: int = 4
     
 
 class PoseDetector:
@@ -91,8 +91,8 @@ class MovementAnalyzer:
         right_foot_distance = self.get_points_distance(31, 0)
         
         
-
-        print(f"Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
+        if self.debug:
+            print(f"Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
         
         # Position is considered stable only if both feet are stable
         if left_foot_distance < self.config.stability_threshold and right_foot_distance < self.config.stability_threshold:
@@ -181,31 +181,40 @@ class MovementAnalyzer:
 class MovementDetector:
     """Main class for movement detection using camera input"""
     
-    def __init__(self, config: Optional[MovementConfig] = None):
+    def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True):
         self.config = config or MovementConfig()
         self.pose_detector = PoseDetector(self.config)
         self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose)
         self.frame_counter = 0
+        self.useCamera = useCamera
         
     def process_movement(self, movement: str) -> None:
         """Log detected movement to console"""
         print(f" ********** Movement detected: {movement} ********** ")
         self.movement_analyzer.is_in_motion = True
             
-    def start_camera(self, video_path: str) -> None:
+    def start_camera(self, video_path: Optional[str] = None) -> None:
         """Start processing video input for movement detection"""
-        cap = cv2.VideoCapture(video_path)
-        
-        if not cap.isOpened():
-            raise ValueError(f"Could not open video file: {video_path}")
+        if self.useCamera:
+            cap = cv2.VideoCapture(1)  # Use camera (device index 0)
+            if not cap.isOpened():
+                raise ValueError("Could not open camera")
+            print("Camera opened successfully!")
+        else:
+            if video_path is None:
+                raise ValueError("Video path must be provided when not using camera")
+            cap = cv2.VideoCapture(video_path)
+            if not cap.isOpened():
+                raise ValueError(f"Could not open video file: {video_path}")
             
-        # Get video properties
-        fps = cap.get(cv2.CAP_PROP_FPS)
-        total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-        duration = total_frames / fps
+            # Get video properties
+            fps = cap.get(cv2.CAP_PROP_FPS)
+            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
+            duration = total_frames / fps
+            
+            print(f"Video opened successfully!")
+            print(f"Video properties: {fps:.2f} FPS, {total_frames} frames, {duration:.2f} seconds")
         
-        print(f"Video opened successfully!")
-        print(f"Video properties: {fps:.2f} FPS, {total_frames} frames, {duration:.2f} seconds")
         print("Processing video for movement detection...")
         
         last_log_time = 0
@@ -218,8 +227,7 @@ class MovementDetector:
                 
                 # If frame is not read correctly, check if we've reached the end
                 if not ret:
-                    # Check if we've reached the end of the video
-                    if cap.get(cv2.CAP_PROP_POS_FRAMES) >= total_frames:
+                    if not self.useCamera and cap.get(cv2.CAP_PROP_POS_FRAMES) >= total_frames:
                         print("End of video reached")
                         break
                     else:
@@ -227,18 +235,16 @@ class MovementDetector:
                         continue
                 
                 # Calculate current time in video
-                current_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-                current_time = current_frame / fps
-                
-                # Log duration every 100 milliseconds
-                if current_time - last_log_time >= log_interval:
-                    # print(f"Video time: {current_time:.1f}/{duration:.1f} seconds ({current_frame}/{total_frames} frames)")
-                    if landmarks:
-                        nose = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.NOSE]
-                        left_hip = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.LEFT_HIP]
-                        # print(f"  Nose coordinates: x={nose.x:.3f}, y={nose.y:.3f}, z={nose.z:.3f}")
-                        # print(f"  Left hip coordinates: x={left_hip.x:.3f}, y={left_hip.y:.3f}, z={left_hip.z:.3f}")
-                    last_log_time = current_time
+                if not self.useCamera:
+                    current_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
+                    current_time = current_frame / fps
+                    
+                    # Log duration every 100 milliseconds
+                    if current_time - last_log_time >= log_interval:
+                        if landmarks:
+                            nose = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.NOSE]
+                            left_hip = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.LEFT_HIP]
+                        last_log_time = current_time
                 
                 # Flip image horizontally for mirror effect
                 image = cv2.flip(image, 1)
@@ -268,12 +274,20 @@ class MovementDetector:
                 # Display frame
                 cv2.imshow('Movement Detection', image)
                 
-                # Wait for Enter key press
-                print("\nPress Enter to continue to next frame (or ESC to exit)...")
-                key = cv2.waitKey(0) & 0xFF
-                if key == 27:  # ESC key
-                    print("Video playback interrupted by user")
-                    break
+                # Wait for key press - different behavior for camera vs video
+                if self.useCamera:
+                    # For camera: small delay and check for ESC key
+                    key = cv2.waitKey(1) & 0xFF
+                    if key == 27:  # ESC key
+                        print("Camera feed interrupted by user")
+                        break
+                else:
+                    # For video: wait for Enter key press
+                    print("\nPress Enter to continue to next frame (or ESC to exit)...")
+                    key = cv2.waitKey(0) & 0xFF
+                    if key == 27:  # ESC key
+                        print("Video playback interrupted by user")
+                        break
                 
                 self.frame_counter += 1
                 
@@ -284,9 +298,11 @@ class MovementDetector:
             cv2.destroyAllWindows()
 
 if __name__ == "__main__":
-    detector = MovementDetector()
-    # video_path = "moves_videos/stability.mp4"
-    # video_path = "moves_videos/stability.mp4"
-    # video_path = "moves_videos/step_right_short.mp4"
-    video_path = "moves_videos/step_left_right.mp4"
-    detector.start_camera(video_path) 
+    # Example using video file
+    detector_video = MovementDetector(useCamera=False)
+    video_path = "moves_videos/weirdo.mp4"
+    detector_video.start_camera(video_path)
+
+    # Example using camera
+    # detector_camera = MovementDetector(useCamera=True)
+    # detector_camera.start_camera()  # No video path needed when using camera 
