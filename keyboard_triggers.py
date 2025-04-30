@@ -29,7 +29,6 @@ def send_key_event_win32(key, press_type):
 def press_and_release(key):
     """Press and release a key using win32api"""
     send_key_event_win32(key, "down")
-    import time
     time.sleep(0.05)  # Small delay between press and release
     send_key_event_win32(key, "up")
 

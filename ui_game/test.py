@@ -4,7 +4,7 @@ import numpy as np
 import time
 from typing import Optional, Tuple, List, Dict
 from dataclasses import dataclass
-from keyboard_triggers import trigger_up, trigger_down, trigger_left, trigger_right
+# from keyboard_triggers import trigger_up, trigger_down, trigger_left, trigger_right
 import threading
 
 @dataclass
@@ -252,10 +252,15 @@ class MovementDetector:
         """Start processing video input for movement detection"""
         print("start_camera")
         if self.useCamera:
-            cap = cv2.VideoCapture(1)  # Use camera (device index 0)
+            # Try camera indices 0 and 1
+            for camera_index in [1]:
+                cap = cv2.VideoCapture(camera_index)
+                if cap.isOpened():
+                    print(f"Camera opened successfully on index {camera_index}!")
+                    break
+                cap.release()
             if not cap.isOpened():
-                raise ValueError("Could not open camera")
-            print("Camera opened successfully!")
+                raise ValueError("Could not open any camera")
         else:
             if video_path is None:
                 raise ValueError("Video path must be provided when not using camera")
