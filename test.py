@@ -15,9 +15,9 @@ class MovementConfig:
     step_threshold: float = 0.02
     bend_threshold: float = 0.1
     cooldown_period: float = 1.0
-    stability_threshold: float = 0.02
+    stability_threshold: float = 0.028
 
-    num_frames_to_check: int = 4
+    num_frames_to_check: int = 5
     
 
 class PoseDetector:
@@ -76,7 +76,8 @@ class MovementAnalyzer:
     def get_points_distance(self, point_num: int, type_point_index: int) -> float:
         current_point = self.prev_landmarks[0][point_num][type_point_index]
         prev_point = self.prev_landmarks[self.config.num_frames_to_check - 1][point_num][type_point_index]
-        return np.linalg.norm(current_point - prev_point)
+        is_left = current_point < prev_point
+        return np.linalg.norm(current_point - prev_point), is_left
         
     def update_is_stable(self, landmark_points: np.ndarray) -> bool:
         """Check if the current position is stable based on both feet positions"""
@@ -87,8 +88,8 @@ class MovementAnalyzer:
             self.prev_landmarks.pop()
             
         # Calculate distance betself.prev_landmarks[0]ween current and previous positions for both feet
-        left_foot_distance = self.get_points_distance(32, 0)
-        right_foot_distance = self.get_points_distance(31, 0)
+        left_foot_distance, _ = self.get_points_distance(32, 0)
+        right_foot_distance, _ = self.get_points_distance(31, 0)
         
         
         if self.debug:
@@ -128,9 +129,9 @@ class MovementAnalyzer:
             return None
             
         # Get current positions
-        nose_y = self.get_points_distance(self.mp_pose.PoseLandmark.NOSE, 0)
-        left_foot_distance = self.get_points_distance(32, 0)
-        right_foot_distance = self.get_points_distance(31, 0)
+        nose_ym, _ = self.get_points_distance(self.mp_pose.PoseLandmark.NOSE, 0)
+        left_foot_distance, left_foot_is_left = self.get_points_distance(32, 0)
+        right_foot_distance, right_foot_is_left = self.get_points_distance(31, 0)
         
         # Update motion tracking
         # self._update_motion_state(left_hip_x, current_time)
@@ -163,15 +164,14 @@ class MovementAnalyzer:
         # Only detect step if we're not already in motion in that direction
         if self.debug:  # Log every 5th frame
             print(f"[DEBUG] Right foot distance: {right_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
-        if right_foot_distance > self.config.step_threshold:
+            print(f"[DEBUG] Left foot distance: {left_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
+
+        if not right_foot_is_left and right_foot_distance > self.config.step_threshold:
             if self.debug:
                 print(f"[DEBUG] Step Right detected - Diff: {right_foot_distance:.4f}")
             return "Step Right"
         
-
-        if self.debug:
-            print(f"[DEBUG] Left foot distance: {left_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
-        if left_foot_distance > self.config.step_threshold:
+        if left_foot_is_left and left_foot_distance > self.config.step_threshold:
             if self.debug:
                 print(f"[DEBUG] Step Left detected - Diff: {left_foot_distance:.4f}")
             return "Step Left"
@@ -300,7 +300,9 @@ class MovementDetector:
 if __name__ == "__main__":
     # Example using video file
     detector_video = MovementDetector(useCamera=False)
-    video_path = "moves_videos/weirdo.mp4"
+    video_path = "moves_videos/test_1.mp4"
+    # video_path = "moves_videos/step_left_right.mp4"
+    # video_path = "moves_videos/weirdo.mp4"
     detector_video.start_camera(video_path)
 
     # Example using camera
