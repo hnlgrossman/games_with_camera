@@ -4,6 +4,7 @@ import numpy as np
 import time
 from typing import Optional, Tuple, List, Dict
 from dataclasses import dataclass
+from keyboard_triggers import trigger_up, trigger_down, trigger_left, trigger_right
 
 @dataclass
 class MovementConfig:
@@ -53,17 +54,23 @@ class MovementAnalyzer:
         self.mp_pose = mp_pose
         self.stable_position: Optional[np.ndarray] = None
         self.prev_landmarks: List[Optional[np.ndarray]] = None
+
         self.stable_counter: int = 0
+        self.stable_counter_left_foot: int = 0
+        self.stable_counter_right_foot: int = 0
+
         self.base_height: Optional[float] = None
         self.base_hip_x: Optional[float] = None
         self.last_detection_time: float = 0
         self.frame_counter: int = 0
 
+        self.is_left_foot_stable: bool = True
+        self.is_right_foot_stable: bool = True
         self.is_stable: bool = True
         self.is_in_motion: bool = False
         
         # Motion tracking
-        self.debug: bool = True  # Enable debug logging
+        self.debug: bool = False  # Enable debug logging
         
     def update_location(self, landmarks: mp.solutions.pose.PoseLandmark, landmark_points: np.ndarray) -> None:
         """Update the reference position for movement detection"""
@@ -87,26 +94,45 @@ class MovementAnalyzer:
             self.prev_landmarks.insert(0, landmark_points)
             self.prev_landmarks.pop()
             
-        # Calculate distance betself.prev_landmarks[0]ween current and previous positions for both feet
+        # Calculate distance between current and previous positions for both feet
         left_foot_distance, _ = self.get_points_distance(32, 0)
         right_foot_distance, _ = self.get_points_distance(31, 0)
-        
         
         if self.debug:
             print(f"Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
         
-        # Position is considered stable only if both feet are stable
-        if left_foot_distance < self.config.stability_threshold and right_foot_distance < self.config.stability_threshold:
-            self.stable_counter += 1
-            if self.debug:  # Log every 5th frame
-                print(f"[DEBUG] Stability counter: {self.stable_counter}/{self.config.required_stable_frames}")
-            self.is_stable = self.stable_counter >= self.config.required_stable_frames
+        # Check left foot stability
+        if left_foot_distance < self.config.stability_threshold:
+            self.stable_counter_left_foot += 1
+            if self.debug:
+                print(f"[DEBUG] Left foot stability counter: {self.stable_counter_left_foot}/{self.config.required_stable_frames}")
+            self.is_left_foot_stable = self.stable_counter_left_foot >= self.config.required_stable_frames
         else:
-            if self.debug and self.stable_counter > 0:
-                print(f"[DEBUG] Reset stability counter. Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
-            self.stable_counter = 0
-            self.is_stable = False
+            if self.debug and self.stable_counter_left_foot > 0:
+                print(f"[DEBUG] Reset left foot stability counter. Distance: {left_foot_distance:.4f}")
+            self.stable_counter_left_foot = 0
+            self.is_left_foot_stable = False
 
+        # Check right foot stability
+        if right_foot_distance < self.config.stability_threshold:
+            self.stable_counter_right_foot += 1
+            if self.debug:
+                print(f"[DEBUG] Right foot stability counter: {self.stable_counter_right_foot}/{self.config.required_stable_frames}")
+            self.is_right_foot_stable = self.stable_counter_right_foot >= self.config.required_stable_frames
+        else:
+            if self.debug and self.stable_counter_right_foot > 0:
+                print(f"[DEBUG] Reset right foot stability counter. Distance: {right_foot_distance:.4f}")
+            self.stable_counter_right_foot = 0
+            self.is_right_foot_stable = False
+
+        # Overall stability requires both feet to be stable
+        self.is_stable = self.is_left_foot_stable and self.is_right_foot_stable
+        if self.is_stable:
+            self.stable_counter = self.config.required_stable_frames
+        else:
+            self.stable_counter = 0
+
+        return self.is_stable
 
     def detect_movement(self, landmarks: mp.solutions.pose.PoseLandmark) -> Optional[str]:
         """Detect and return the type of movement"""
@@ -118,10 +144,36 @@ class MovementAnalyzer:
         self.frame_counter += 1
         
         self.update_is_stable(landmark_points)
+
+        is_stable = self.is_stable
+        stable_check = "is_stable"
+        
+        nose_ym, _ = self.get_points_distance(self.mp_pose.PoseLandmark.NOSE, 0)
+        left_foot_distance, left_foot_is_left = self.get_points_distance(32, 0)
+        right_foot_distance, right_foot_is_left = self.get_points_distance(31, 0)
+
+        if(not right_foot_is_left and right_foot_distance > left_foot_distance):
+            is_stable = self.is_right_foot_stable
+            stable_check = "is_right_foot_stable"
+        elif(left_foot_is_left and left_foot_distance > right_foot_distance):
+            is_stable = self.is_left_foot_stable
+            stable_check = "is_left_foot_stable"
+        else:
+            if(self.stable_counter_right_foot > self.stable_counter_left_foot):
+                is_stable = self.is_right_foot_stable
+                stable_check = "is_right_foot_stable"
+            else:
+                is_stable = self.is_left_foot_stable
+                stable_check = "is_left_foot_stable"
+
         # Establish stable position if needed
-        if self.is_stable:
+        if self.debug:
+            print(f"[DEBUG] {stable_check} - {is_stable}")
+        if is_stable:
             # self.update_location(landmarks, landmark_points)
             if(self.is_in_motion):
+                if self.debug:
+                    print(f"[DEBUG] is_in_motion reseted !!!")
                 self.is_in_motion = False
             return None
         
@@ -129,9 +181,7 @@ class MovementAnalyzer:
             return None
             
         # Get current positions
-        nose_ym, _ = self.get_points_distance(self.mp_pose.PoseLandmark.NOSE, 0)
-        left_foot_distance, left_foot_is_left = self.get_points_distance(32, 0)
-        right_foot_distance, right_foot_is_left = self.get_points_distance(31, 0)
+        
         
         # Update motion tracking
         # self._update_motion_state(left_hip_x, current_time)
@@ -192,6 +242,10 @@ class MovementDetector:
         """Log detected movement to console"""
         print(f" ********** Movement detected: {movement} ********** ")
         self.movement_analyzer.is_in_motion = True
+        if movement == "Step Right":
+            trigger_right()
+        elif movement == "Step Left":
+            trigger_left()
             
     def start_camera(self, video_path: Optional[str] = None) -> None:
         """Start processing video input for movement detection"""
@@ -299,7 +353,7 @@ class MovementDetector:
 
 if __name__ == "__main__":
     # Example using video file
-    detector_video = MovementDetector(useCamera=False)
+    detector_video = MovementDetector(useCamera=True)
     video_path = "moves_videos/test_1.mp4"
     # video_path = "moves_videos/step_left_right.mp4"
     # video_path = "moves_videos/weirdo.mp4"
