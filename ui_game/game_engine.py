@@ -218,6 +218,7 @@ class GameEngine:
         self.screen.blit(fps_text, (WIDTH - fps_text.get_width() - 10, HEIGHT - fps_text.get_height() - 10))
     
     def run(self):
+        print("run")
         self.get_input_from_camera()
         while self.running:
             self.handle_events()

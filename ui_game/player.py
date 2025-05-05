@@ -11,7 +11,7 @@ class Player:
         self.moving = False
         self.x = LANES[self.lane] - self.size // 2
         self.y = HEIGHT - self.size - 20
-        self.move_speed = 12  # Pixels per frame during lane change
+        self.move_speed = 40  # Increased from 12 to 40 for much faster lane changes
         
         # For jumping and ducking
         self.default_y = HEIGHT - self.size - 40
@@ -33,16 +33,10 @@ class Player:
         current_time = pygame.time.get_ticks()
         
         if self.moving:
-            target_x = LANES[self.target_lane] - self.size // 2
-            if abs(self.x - target_x) <= self.move_speed:
-                # Reached target position
-                self.x = target_x
-                self.lane = self.target_lane
-                self.moving = False
-            else:
-                # Move towards target
-                direction = 1 if target_x > self.x else -1
-                self.x += direction * self.move_speed
+            # Instantly move to the target lane
+            self.x = LANES[self.target_lane] - self.size // 2
+            self.lane = self.target_lane
+            self.moving = False
         
         # Update jumping (just size change)
         if self.jumping:
