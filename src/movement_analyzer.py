@@ -7,9 +7,10 @@ from config import MovementConfig
 class MovementAnalyzer:
     """Analyzes pose landmarks to detect specific movements"""
     
-    def __init__(self, config: MovementConfig, mp_pose):
+    def __init__(self, config: MovementConfig, mp_pose, debug: bool = False):
         self.config = config
         self.mp_pose = mp_pose
+        self.debug = debug
         
         # Landmark tracking
         self.stable_position: Optional[np.ndarray] = None
@@ -29,7 +30,7 @@ class MovementAnalyzer:
         self.is_left_foot_stable: bool = True
         self.is_right_foot_stable: bool = True
         self.is_stable: bool = True
-        self.is_in_motion: bool = False
+        self.is_in_motion: dict = {"step": False, "jump": False, "bend": False}
         self.last_detection_time: float = 0
         
         # Landmark indices for common body parts
@@ -120,7 +121,7 @@ class MovementAnalyzer:
         self._update_foot_stability(left_foot_distance, True)
         self._update_foot_stability(right_foot_distance, False)
 
-        self.is_stable = self.is_left_foot_stable and self.is_right_foot_stable
+        self.is_stable = self.is_left_foot_stable or self.is_right_foot_stable
         
         # Update overall stability counter
         if self.is_stable:
@@ -129,6 +130,26 @@ class MovementAnalyzer:
             self.stable_counter = 0
 
         return self.is_stable
+    
+    def update_is_in_motion_step(self, left_foot_distance: float, left_foot_is_left: bool, right_foot_distance: float, right_foot_is_left: bool) -> None:
+        # update step
+
+        # Determine which stability criterion to use
+        is_stable_step, stable_check = self._determine_stability_criterion(
+            left_foot_distance, left_foot_is_left,
+            right_foot_distance, right_foot_is_left
+        )
+
+        if self.debug:
+            print(f"[DEBUG] {stable_check} - {is_stable_step}")
+            
+        # Check stability and motion states
+        if is_stable_step:
+            if self.is_in_motion["step"]:
+                if self.debug:
+                    print("[DEBUG] is_in_motion reset")
+                self.is_in_motion["step"] = False
+            return None
 
     def _determine_stability_criterion(self, left_foot_distance: float, left_foot_is_left: bool,
                                      right_foot_distance: float, right_foot_is_left: bool) -> Tuple[bool, str]:
@@ -169,7 +190,12 @@ class MovementAnalyzer:
         Args:
             movement: The detected movement type
         """
-        self.is_in_motion = True
+        if movement == "Step Right" or movement == "Step Left":
+            self.is_in_motion["step"] = True
+        elif movement == "Jump":
+            self.is_in_motion["jump"] = True
+        elif movement == "Bend":
+            self.is_in_motion["bend"] = True
         self.last_detection_time = time.time()
         if self.debug:
             print(f"[DEBUG] Movement detected: {movement}")
@@ -184,36 +210,20 @@ class MovementAnalyzer:
         
         self.update_landmarks_history(landmark_points)
         self.update_is_stable(landmark_points)
-        
-        # Get foot distances and directions
-        _, _ = self.get_points_distance(self.NOSE_INDEX, 0)  # Unused nose_ym variable
+
         left_foot_distance, left_foot_is_left = self.get_points_distance(self.LEFT_FOOT_INDEX, 0)
         right_foot_distance, right_foot_is_left = self.get_points_distance(self.RIGHT_FOOT_INDEX, 0)
-
-        # Determine which stability criterion to use
-        is_stable, stable_check = self._determine_stability_criterion(
-            left_foot_distance, left_foot_is_left,
-            right_foot_distance, right_foot_is_left
-        )
-
-        if self.debug:
-            print(f"[DEBUG] {stable_check} - {is_stable}")
-            
-        # Check stability and motion states
-        if is_stable:
-            if self.is_in_motion:
-                if self.debug:
-                    print("[DEBUG] is_in_motion reset")
-                self.is_in_motion = False
-            return None
         
-        if self.is_in_motion:
-            return None
+        self.update_is_in_motion_step(left_foot_distance, left_foot_is_left, right_foot_distance, right_foot_is_left)
 
         # Debug output for foot distances
         if self.debug:
             print(f"[DEBUG] Right foot distance: {right_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
             print(f"[DEBUG] Left foot distance: {left_foot_distance:.4f}, Threshold: {self.config.step_threshold:.4f}")
+
+        # Check if any motion is in progress
+        if any(self.is_in_motion.values()):
+            return None
 
         # Detect steps using dedicated functions
         movement = self._detect_step_right(right_foot_distance, right_foot_is_left)

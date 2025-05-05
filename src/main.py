@@ -13,8 +13,8 @@ def left_move(_):
 
 def main():
     moves = {"right_move": right_move, "left_move": left_move}
-    detector = MovementDetector(useCamera=False, moves=moves, isTest=False)
-    video_path = "C:/projects/games_with_camera/moves_videos/test_1.mp4"
+    detector = MovementDetector(useCamera=False, moves=moves, isTest=False, debug=True)
+    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     detector.start_camera(video_path)
 
 if __name__ == "__main__":

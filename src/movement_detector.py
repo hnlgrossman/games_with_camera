@@ -33,19 +33,19 @@ class PoseDetector:
 class MovementDetector:
     """Main class for movement detection using camera input"""
     
-    def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, moves: any = None):
+    def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, moves: any = None, debug: bool = False):
         self.config = config or MovementConfig()
         self.pose_detector = PoseDetector(self.config)
-        self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose)
+        self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose, debug)
         self.frame_counter = 0
         self.useCamera = useCamera
         self.isTest = isTest
         self.moves = moves
+        self.debug = debug
 
     def process_movement(self, movement: str, data: any) -> None:
         """Log detected movement to console"""
         print(f" ********** Movement detected: {movement} ********** ")
-        self.movement_analyzer.is_in_motion = True
         if movement == "Step Right":
             self.moves["right_move"](data)
         elif movement == "Step Left":
