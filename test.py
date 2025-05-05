@@ -370,15 +370,15 @@ if __name__ == "__main__":
     video_path = "moves_videos/test_1.mp4"
     # video_path = "moves_videos/step_left_right.mp4"
     # video_path = "moves_videos/weirdo.mp4"
-    print("start")
-    # detector_video.start_camera(video_path)
-    camera_thread = threading.Thread(target=detector_video.start_camera, args=(video_path,moves))
-    camera_thread.start()
-    print("end")
-    # Example using camera
-    # detector_camera = MovementDetector(useCamera=True)
-    # detector_camera.start_camera()  # No video path needed when using camera
+    # print("start")
+    detector_video.start_camera(video_path, moves)
+    # camera_thread = threading.Thread(target=detector_video.start_camera, args=(video_path,moves))
+    # camera_thread.start()
+    # print("end")
+    # # Example using camera
+    # # detector_camera = MovementDetector(useCamera=True)
+    # # detector_camera.start_camera()  # No video path needed when using camera
 
-    # Wait for the camera thread to finish before exiting the main script
-    camera_thread.join()
-    print("Camera thread finished.") 
+    # # Wait for the camera thread to finish before exiting the main script
+    # camera_thread.join()
+    # print("Camera thread finished.") 

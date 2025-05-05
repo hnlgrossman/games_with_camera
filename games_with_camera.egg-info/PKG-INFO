@@ -1,0 +1,6 @@
+Metadata-Version: 2.1
+Name: games_with_camera
+Version: 0.1
+Requires-Dist: opencv-python
+Requires-Dist: mediapipe
+Requires-Dist: numpy

@@ -1,0 +1,17 @@
+{
+  "test_sequence_from_log": {
+    "video_path": "moves_videos/test_1.mp4",
+    "moves": [
+      { "move_key": "step_right", "from_frame": 30, "to_frame": 32 },
+      { "move_key": "step_left", "from_frame": 52, "to_frame": 54 },
+      { "move_key": "step_right", "from_frame": 74, "to_frame": 76 },
+      { "move_key": "step_left", "from_frame": 100, "to_frame": 102 },
+      { "move_key": "step_left", "from_frame": 115, "to_frame": 117 },
+      { "move_key": "step_right", "from_frame": 141, "to_frame": 143 },
+      { "move_key": "step_right", "from_frame": 157, "to_frame": 159 },
+      { "move_key": "step_left", "from_frame": 192, "to_frame": 194 },
+      { "move_key": "step_right", "from_frame": 209, "to_frame": 211 },
+      { "move_key": "step_left", "from_frame": 223, "to_frame": 225 }
+    ]
+  }
+}
