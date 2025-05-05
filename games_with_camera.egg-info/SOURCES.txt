@@ -1,4 +1,4 @@
-setup.py
+Gaga. Hama.setup.py
 games_with_camera.egg-info/PKG-INFO
 games_with_camera.egg-info/SOURCES.txt
 games_with_camera.egg-info/dependency_links.txt

@@ -47,7 +47,7 @@ class PoseDetector:
             self.mp_pose.POSE_CONNECTIONS
         )
 
-class MovementAnalyzer:
+class MovementAnThere is gone. There is a lot of. 
     """Analyzes pose landmarks to detect specific movements"""
     
     def __init__(self, config: MovementConfig, mp_pose):
