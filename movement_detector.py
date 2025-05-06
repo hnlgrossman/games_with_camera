@@ -47,7 +47,6 @@ class MovementDetector:
             if not cap.isOpened():
                 print("Failed to open camera. Please check your camera connection.")
                 return
-                There is a.
         print("Camera opened successfully!")
         print("Please stand still to establish a baseline position...")
         

@@ -4,16 +4,17 @@ import os
 
 # Add the parent directory to the path to import modules from src
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
-from movement_detector import MovementDetector
-from config import MovementConfig
-
+from src.movement_detector import MovementDetector
 
 def run_movement_tests():
+    print("Running movement tests")
     # Load the test configuration
     with open(os.path.join(os.path.dirname(__file__), 'tests.json'), 'r') as file:
         test_config = json.load(file)
     
+    print(test_config)
     # Prompt user for specific test name
     test_to_run = input("Enter a specific test name to run (leave blank to run all tests): ").strip()
     
@@ -38,44 +39,37 @@ def run_movement_tests():
         
         print(f"Using video path: {video_path}")
         
-        # Create a dictionary to store the detected moves
+        # Create a list to store the detected moves
         detected_moves = []
         
-        # Define move handlers that will record when they're called
-        def right_move(data):
-            detected_moves.append({
-                "move_key": "step_right", 
-                "frame": data["frame"]
-            })
-            print(f"Right move detected at frame {data['frame']}")
+        # Define movement callback that will record detected movements
+        def movement_callback(movement, data):
+            move_key = None
+            if movement == "Step Right":
+                move_key = "step_right"
+                print(f"Right move detected at frame {data['frame']}")
+            elif movement == "Step Left":
+                move_key = "step_left"
+                print(f"Left move detected at frame {data['frame']}")
+            elif movement == "Jump":
+                move_key = "jump"
+                print(f"Jump detected at frame {data['frame']}")
+                
+            if move_key:
+                detected_moves.append({
+                    "move_key": move_key,
+                    "frame": data["frame"]
+                })
         
-        def left_move(data):
-            detected_moves.append({
-                "move_key": "step_left", 
-                "frame": data["frame"]
-            })
-            print(f"Left move detected at frame {data['frame']}")
-        
-        def jump_move(data):
-            detected_moves.append({
-                "move_key": "jump", 
-                "frame": data["frame"]
-            })
-            print(f"Jump detected at frame {data['frame']}")
-        
-        # Map of move keys to handler functions
-        move_handlers = {
-            "right_move": right_move,
-            "left_move": left_move, 
-            "jump": jump_move
-        }
-        
-        # Create and run the movement detector
+        # Create and run the movement detector with the callback
         detector = MovementDetector(
             useCamera=False,
-            moves=move_handlers,
+            callback=movement_callback,
             isTest=True
         )
+        
+        # Add debug info
+        print(f"Debug - MovementDetector initialized with callback function")
         
         # Process the video
         detector.start_camera(video_path)

@@ -1,19 +1,19 @@
 from config import MovementConfig
 from movement_detector import MovementDetector
 from triggers import trigger_left, trigger_right
+from typing import Dict, Any
 
-def right_move(_):
-    trigger_right()
-    print("right_move")
-    
-
-def left_move(_):
-    trigger_left()
-    print("left_move")
+def movement_callback(movement: str, data: Dict[str, Any]) -> None:
+    """Callback function for movement detection"""
+    if movement == "Step Right":
+        trigger_right()
+        print("right_move")
+    elif movement == "Step Left":
+        trigger_left()
+        print("left_move")
 
 def main():
-    moves = {"right_move": right_move, "left_move": left_move}
-    detector = MovementDetector(useCamera=False, moves=moves, isTest=False, debug=True)
+    detector = MovementDetector(useCamera=False, callback=movement_callback, isTest=False, debug=True)
     video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     detector.start_camera(video_path)
 

@@ -38,8 +38,12 @@ class MovementAnalyzer:
         self.RIGHT_FOOT_INDEX = 31
         self.NOSE_INDEX = self.mp_pose.PoseLandmark.NOSE
         self.LEFT_HIP_INDEX = self.mp_pose.PoseLandmark.LEFT_HIP
+
+        self.x_coordinate_index = 0
+        self.y_coordinate_index = 1
+        self.z_coordinate_index = 2
+
         
-        self.debug: bool = False  # Enable debug logging
         
     def update_location(self, landmarks: mp.solutions.pose.PoseLandmark, landmark_points: np.ndarray) -> None:
         """Update the reference position for movement detection"""
@@ -112,8 +116,8 @@ class MovementAnalyzer:
     def update_is_stable(self, landmark_points: np.ndarray) -> bool:
         """Check if the current position is stable based on both feet positions"""
             
-        left_foot_distance, _ = self.get_points_distance(self.LEFT_FOOT_INDEX, 0)
-        right_foot_distance, _ = self.get_points_distance(self.RIGHT_FOOT_INDEX, 0)
+        left_foot_distance, _ = self.get_points_distance(self.LEFT_FOOT_INDEX, self.x_coordinate_index)
+        right_foot_distance, _ = self.get_points_distance(self.RIGHT_FOOT_INDEX, self.x_coordinate_index)
         
         if self.debug:
             print(f"Left foot distance: {left_foot_distance:.4f}, Right foot distance: {right_foot_distance:.4f}")
@@ -211,8 +215,8 @@ class MovementAnalyzer:
         self.update_landmarks_history(landmark_points)
         self.update_is_stable(landmark_points)
 
-        left_foot_distance, left_foot_is_left = self.get_points_distance(self.LEFT_FOOT_INDEX, 0)
-        right_foot_distance, right_foot_is_left = self.get_points_distance(self.RIGHT_FOOT_INDEX, 0)
+        left_foot_distance, left_foot_is_left = self.get_points_distance(self.LEFT_FOOT_INDEX, self.x_coordinate_index)
+        right_foot_distance, right_foot_is_left = self.get_points_distance(self.RIGHT_FOOT_INDEX, self.x_coordinate_index)
         
         self.update_is_in_motion_step(left_foot_distance, left_foot_is_left, right_foot_distance, right_foot_is_left)
 

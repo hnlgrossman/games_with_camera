@@ -1,7 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
-from typing import Optional
+from typing import Optional, Callable, Dict, Any
 from config import MovementConfig
 from movement_analyzer import MovementAnalyzer
 
@@ -33,23 +33,21 @@ class PoseDetector:
 class MovementDetector:
     """Main class for movement detection using camera input"""
     
-    def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, moves: any = None, debug: bool = False):
+    def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, callback: Optional[Callable[[str, Dict[str, Any]], None]] = None, debug: bool = False):
         self.config = config or MovementConfig()
         self.pose_detector = PoseDetector(self.config)
         self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose, debug)
         self.frame_counter = 0
         self.useCamera = useCamera
         self.isTest = isTest
-        self.moves = moves
+        self.callback = callback
         self.debug = debug
 
-    def process_movement(self, movement: str, data: any) -> None:
-        """Log detected movement to console"""
+    def process_movement(self, movement: str, data: Dict[str, Any]) -> None:
+        """Call the callback function with detected movement"""
         print(f" ********** Movement detected: {movement} ********** ")
-        if movement == "Step Right":
-            self.moves["right_move"](data)
-        elif movement == "Step Left":
-            self.moves["left_move"](data)
+        if self.callback:
+            self.callback(movement, data)
             
     def start_camera(self, video_path: Optional[str] = None) -> None:
         """Start processing video input for movement detection"""
