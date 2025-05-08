@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import numpy as np
+import time
 from typing import Optional, Callable, Dict, Any
 from config import MovementConfig
 from movement_analyzer import MovementAnalyzer
@@ -42,6 +43,10 @@ class MovementDetector:
         self.isTest = isTest
         self.callback = callback
         self.debug = debug
+        # For FPS calculation
+        self.prev_frame_time = 0
+        self.curr_frame_time = 0
+        self.current_fps = 30.0  # Default FPS
 
     def process_movement(self, movement: str, data: Dict[str, Any]) -> None:
         """Call the callback function with detected movement"""
@@ -53,10 +58,10 @@ class MovementDetector:
         """Start processing video input for movement detection"""
         print("start_camera")
         if self.useCamera:
-            cap = cv2.VideoCapture(1)  # Use camera (device index 0)
+            cap = cv2.VideoCapture(self.config.camera_index)  # Use camera with index from config
             if not cap.isOpened():
-                raise ValueError("Could not open camera")
-            print("Camera opened successfully!")
+                raise ValueError(f"Could not open camera with index {self.config.camera_index}")
+            print(f"Camera {self.config.camera_index} opened successfully!")
         else:
             if video_path is None:
                 raise ValueError("Video path must be provided when not using camera")
@@ -64,12 +69,7 @@ class MovementDetector:
             if not cap.isOpened():
                 raise ValueError(f"Could not open video file: {video_path}")
             
-            fps = cap.get(cv2.CAP_PROP_FPS)
-            total_frames = int(cap.get(cv2.CAP_PROP_FRAME_COUNT))
-            duration = total_frames / fps
-            
             print(f"Video opened successfully!")
-            print(f"Video properties: {fps:.2f} FPS, {total_frames} frames, {duration:.2f} seconds")
         
         print("Processing video for movement detection...")
         
@@ -78,6 +78,17 @@ class MovementDetector:
         
         try:
             while True:
+                # Calculate FPS
+                self.curr_frame_time = time.time()
+                fps = 1 / (self.curr_frame_time - self.prev_frame_time) if self.prev_frame_time > 0 else 30.0
+                self.prev_frame_time = self.curr_frame_time
+                
+                # Update current FPS with smoothing
+                self.current_fps = 0.9 * self.current_fps + 0.1 * fps  # Exponential moving average for stability
+                
+                # Pass the FPS to movement analyzer
+                self.movement_analyzer.update_fps(self.current_fps)
+                
                 ret, image = cap.read()
                 
                 if not ret:
@@ -87,16 +98,6 @@ class MovementDetector:
                     else:
                         print("Error reading frame, continuing...")
                         continue
-                
-                if not self.useCamera:
-                    current_frame = cap.get(cv2.CAP_PROP_POS_FRAMES)
-                    current_time = current_frame / fps
-                    
-                    if current_time - last_log_time >= log_interval:
-                        if landmarks:
-                            nose = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.NOSE]
-                            left_hip = landmarks.landmark[self.pose_detector.mp_pose.PoseLandmark.LEFT_HIP]
-                        last_log_time = current_time
                 
                 image = cv2.flip(image, 1)
                 
@@ -115,6 +116,11 @@ class MovementDetector:
                 else:
                     if self.frame_counter % 30 == 0:
                         print("No pose landmarks detected. Make sure your full body is visible.")
+                
+                # Calculate and display FPS only when using camera
+                if self.useCamera:
+                    fps_text = f"FPS: {self.current_fps:.1f}"
+                    cv2.putText(image, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
                 
                 if not self.isTest:
                     cv2.imshow('Movement Detection', image)

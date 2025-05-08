@@ -43,7 +43,29 @@ class MovementAnalyzer:
         self.y_coordinate_index = 1
         self.z_coordinate_index = 2
 
+        self.is_current_step_stable = False
         
+        # FPS adaptation
+        self.current_fps = 30.0
+        self.required_stable_frames = self.config.required_stable_frames_per_30_fps
+        
+    def update_fps(self, fps: float) -> None:
+        """Update the current FPS and adjust required_stable_frames accordingly"""
+        self.current_fps = max(1.0, fps)  # Ensure FPS is at least 1 to avoid division by zero
+        
+        # Calculate the adjusted stable frames based on FPS ratio
+        base_frames = self.config.required_stable_frames_per_30_fps
+        fps_ratio = self.current_fps / 30.0
+        
+        # Scale the required frames proportionally to the FPS
+        # Formula: required_frames = base_frames * (current_fps / 30)
+        scaled_frames = base_frames * fps_ratio
+        
+        # Round to nearest integer and ensure minimum of 1 frame
+        self.required_stable_frames = max(1, round(scaled_frames))
+        
+        if self.debug:
+            print(f"[DEBUG] FPS: {self.current_fps:.1f}, FPS ratio: {fps_ratio:.2f}, Required stable frames: {self.required_stable_frames}")
         
     def update_location(self, landmarks: mp.solutions.pose.PoseLandmark, landmark_points: np.ndarray) -> None:
         """Update the reference position for movement detection"""
@@ -94,9 +116,9 @@ class MovementAnalyzer:
         if foot_distance < self.config.stability_threshold:
             counter += 1
             if self.debug:
-                print(f"[DEBUG] {counter_name.title()} stability counter: {counter}/{self.config.required_stable_frames}")
+                print(f"[DEBUG] {counter_name.title()} stability counter: {counter}/{self.required_stable_frames}")
             
-            is_stable = counter >= self.config.required_stable_frames
+            is_stable = counter >= self.required_stable_frames
         else:
             if self.debug and counter > 0:
                 print(f"[DEBUG] Reset {counter_name} stability counter. Distance: {foot_distance:.4f}")
@@ -129,7 +151,7 @@ class MovementAnalyzer:
         
         # Update overall stability counter
         if self.is_stable:
-            self.stable_counter = self.config.required_stable_frames
+            self.stable_counter = self.required_stable_frames
         else:
             self.stable_counter = 0
 
@@ -139,16 +161,16 @@ class MovementAnalyzer:
         # update step
 
         # Determine which stability criterion to use
-        is_stable_step, stable_check = self._determine_stability_criterion(
+        self.is_current_step_stable, stable_check = self._determine_stability_criterion(
             left_foot_distance, left_foot_is_left,
             right_foot_distance, right_foot_is_left
         )
 
         if self.debug:
-            print(f"[DEBUG] {stable_check} - {is_stable_step}")
+            print(f"[DEBUG] {stable_check} - {self.is_current_step_stable}")
             
         # Check stability and motion states
-        if is_stable_step:
+        if self.is_current_step_stable:
             if self.is_in_motion["step"]:
                 if self.debug:
                     print("[DEBUG] is_in_motion reset")
@@ -170,7 +192,7 @@ class MovementAnalyzer:
 
     def _detect_step_right(self, right_foot_distance: float, right_foot_is_left: bool) -> Optional[str]:
         """Detect step right movement"""
-        if not right_foot_is_left and right_foot_distance > self.config.step_threshold:
+        if not self.is_current_step_stable and not right_foot_is_left and right_foot_distance > self.config.step_threshold:
             if self.debug:
                 print(f"[DEBUG] Step Right detected - Diff: {right_foot_distance:.4f}")
             movement = "Step Right"
@@ -180,7 +202,7 @@ class MovementAnalyzer:
 
     def _detect_step_left(self, left_foot_distance: float, left_foot_is_left: bool) -> Optional[str]:
         """Detect step left movement"""
-        if left_foot_is_left and left_foot_distance > self.config.step_threshold:
+        if not self.is_current_step_stable and left_foot_is_left and left_foot_distance > self.config.step_threshold:
             if self.debug:
                 print(f"[DEBUG] Step Left detected - Diff: {left_foot_distance:.4f}")
             movement = "Step Left"
@@ -204,9 +226,35 @@ class MovementAnalyzer:
         if self.debug:
             print(f"[DEBUG] Movement detected: {movement}")
 
+    def _are_required_landmarks_visible(self, landmarks) -> bool:
+        """Check if all required landmarks are visible
+        
+        Args:
+            landmarks: MediaPipe pose landmarks
+            
+        Returns:
+            Boolean indicating if all required landmarks are visible and valid
+        """
+        required_landmarks = [
+            self.NOSE_INDEX,
+            self.LEFT_HIP_INDEX,
+            self.LEFT_FOOT_INDEX,
+            self.RIGHT_FOOT_INDEX
+        ]
+        
+        for landmark_idx in required_landmarks:
+            if landmark_idx >= len(landmarks.landmark) or landmarks.landmark[landmark_idx].visibility < self.config.visibility_threshold:
+                return False
+        
+        return True
+
     def detect_movement(self, landmarks: mp.solutions.pose.PoseLandmark) -> Optional[str]:
         """Detect and return the type of movement"""
         if landmarks is None:
+            return None
+            
+        # Check if all required landmarks are visible
+        if not self._are_required_landmarks_visible(landmarks):
             return None
             
         landmark_points = np.array([[lm.x, lm.y, lm.z] for lm in landmarks.landmark])
