@@ -3,6 +3,7 @@ import time
 from typing import Optional, List, Tuple
 import mediapipe as mp
 from config import MovementConfig
+from sound_manager import SoundManager
 
 class MovementAnalyzer:
     """Analyzes pose landmarks to detect specific movements"""
@@ -38,6 +39,8 @@ class MovementAnalyzer:
         self.RIGHT_FOOT_INDEX = 31
         self.NOSE_INDEX = self.mp_pose.PoseLandmark.NOSE
         self.LEFT_HIP_INDEX = self.mp_pose.PoseLandmark.LEFT_HIP
+        self.LEFT_KNEE_INDEX = self.mp_pose.PoseLandmark.LEFT_KNEE
+        self.RIGHT_KNEE_INDEX = self.mp_pose.PoseLandmark.RIGHT_KNEE
 
         self.x_coordinate_index = 0
         self.y_coordinate_index = 1
@@ -48,6 +51,15 @@ class MovementAnalyzer:
         # FPS adaptation
         self.current_fps = 30.0
         self.required_stable_frames = self.config.required_stable_frames_per_30_fps
+        
+        # Initialize sound manager only if sound is enabled
+        self.sound_manager = None
+        if self.config.sound_enabled:
+            self.sound_manager = SoundManager(volume=self.config.sound_volume)
+            if self.debug:
+                print(f"[DEBUG] Sound manager initialized with volume {self.config.sound_volume}")
+        elif self.debug:
+            print("[DEBUG] Sound is disabled in config")
         
     def update_fps(self, fps: float) -> None:
         """Update the current FPS and adjust required_stable_frames accordingly"""
@@ -222,6 +234,11 @@ class MovementAnalyzer:
             self.is_in_motion["jump"] = True
         elif movement == "Bend":
             self.is_in_motion["bend"] = True
+            
+        # Play the movement sound if enabled
+        if self.sound_manager is not None:
+            self.sound_manager.play_movement_sound(movement)
+            
         self.last_detection_time = time.time()
         if self.debug:
             print(f"[DEBUG] Movement detected: {movement}")
@@ -239,7 +256,9 @@ class MovementAnalyzer:
             self.NOSE_INDEX,
             self.LEFT_HIP_INDEX,
             self.LEFT_FOOT_INDEX,
-            self.RIGHT_FOOT_INDEX
+            self.RIGHT_FOOT_INDEX,
+            self.LEFT_KNEE_INDEX,
+            self.RIGHT_KNEE_INDEX
         ]
         
         for landmark_idx in required_landmarks:
@@ -265,6 +284,15 @@ class MovementAnalyzer:
 
         left_foot_distance, left_foot_is_left = self.get_points_distance(self.LEFT_FOOT_INDEX, self.x_coordinate_index)
         right_foot_distance, right_foot_is_left = self.get_points_distance(self.RIGHT_FOOT_INDEX, self.x_coordinate_index)
+        
+        # Debug logs for nose and knees positions
+        if self.debug:
+            nose = landmarks.landmark[self.NOSE_INDEX]
+            left_knee = landmarks.landmark[self.LEFT_KNEE_INDEX]
+            right_knee = landmarks.landmark[self.RIGHT_KNEE_INDEX]
+            print(f"[DEBUG] Nose position: x={nose.x:.4f}, y={nose.y:.4f}, z={nose.z:.4f}, visibility={nose.visibility:.2f}")
+            print(f"[DEBUG] Left knee: x={left_knee.x:.4f}, y={left_knee.y:.4f}, z={left_knee.z:.4f}, visibility={left_knee.visibility:.2f}")
+            print(f"[DEBUG] Right knee: x={right_knee.x:.4f}, y={right_knee.y:.4f}, z={right_knee.z:.4f}, visibility={right_knee.visibility:.2f}")
         
         self.update_is_in_motion_step(left_foot_distance, left_foot_is_left, right_foot_distance, right_foot_is_left)
 

@@ -14,6 +14,8 @@ class MovementConfig:
     num_frames_to_check: int = 5
     camera_index: int = 1  # Camera device index to use 
     visibility_threshold: float = 0.5  # Minimum visibility score for landmarks to be considered
+    sound_enabled: bool = False  # Whether to play movement sounds
+    sound_volume: float = 0.7  # Sound volume level (0.0 to 1.0)
 
     def __post_init__(self):
         if self.min_detection_confidence < 0 or self.min_detection_confidence > 1:
@@ -37,4 +39,6 @@ class MovementConfig:
         if self.camera_index < 0:
             raise ValueError("camera_index must be non-negative")
         if self.visibility_threshold < 0 or self.visibility_threshold > 1:
-            raise ValueError("visibility_threshold must be between 0 and 1") 
+            raise ValueError("visibility_threshold must be between 0 and 1")
+        if self.sound_volume < 0 or self.sound_volume > 1:
+            raise ValueError("sound_volume must be between 0 and 1") 

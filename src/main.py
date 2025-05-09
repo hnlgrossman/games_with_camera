@@ -13,8 +13,8 @@ def movement_callback(movement: str, data: Dict[str, Any]) -> None:
         print("left_move")
 
 def main():
-    detector = MovementDetector(useCamera=True, callback=movement_callback, isTest=False, debug=False)
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
+    detector = MovementDetector(useCamera=False, callback=movement_callback, isTest=False, debug=True)
+    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
     detector.start_camera(video_path)
 
 if __name__ == "__main__":
