@@ -1,0 +1,22 @@
+{
+  "name": "games_with_camera",
+  "version": "1.0.0",
+  "description": "A project for games using camera input",
+  "scripts": {
+    "start": "python src/main.py",
+    "test": "python src/tests/moves_tests.py",
+    "install-deps": "pip install -r requirements.txt",
+    "clean": "rm -rf __pycache__ && rm -rf *.egg-info",
+    "dev": "python src/main.py --dev"
+  },
+  "keywords": [
+    "python",
+    "games",
+    "camera"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "games_with_camera": "file:"
+  }
+}
