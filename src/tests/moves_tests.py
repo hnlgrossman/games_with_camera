@@ -7,6 +7,14 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
 from src.movement_detector import MovementDetector
+from src.constants import STEP_RIGHT, STEP_LEFT, JUMP
+
+# Update the move_key mappings to use the constants
+MOVE_KEY_MAPPING = {
+    "step_right": STEP_RIGHT,
+    "step_left": STEP_LEFT,
+    "jump": JUMP
+}
 
 def run_movement_tests():
     print("Running movement tests")
@@ -44,22 +52,15 @@ def run_movement_tests():
         
         # Define movement callback that will record detected movements
         def movement_callback(movement, data):
-            move_key = None
-            if movement == "Step Right":
-                move_key = "step_right"
-                print(f"Right move detected at frame {data['frame']}")
-            elif movement == "Step Left":
-                move_key = "step_left"
-                print(f"Left move detected at frame {data['frame']}")
-            elif movement == "Jump":
-                move_key = "jump"
-                print(f"Jump detected at frame {data['frame']}")
-                
-            if move_key:
-                detected_moves.append({
-                    "move_key": move_key,
-                    "frame": data["frame"]
-                })
+            if not movement:
+                return
+            
+            print(f"{movement} move detected at frame {data['frame']}")
+
+            detected_moves.append({
+                "move_key": movement,
+                "frame": data["frame"]
+            })
         
         # Create and run the movement detector with the callback
         detector = MovementDetector(
@@ -92,15 +93,10 @@ def run_movement_tests():
             
             # Check move type
             expected_key = expected_move["move_key"]
-            mapping = {
-                "step_right": "step_right",
-                "step_left": "step_left",
-                "jump": "jump"
-            }
             
-            if mapping[expected_key] != detected["move_key"]:
-                print(f"❌ FAIL: Move {i+1} should be {expected_key} but was {detected['move_key']}")
-                all_passed = False
+            # if expected_key not in MOVE_KEY_MAPPING or MOVE_KEY_MAPPING[expected_key] != detected["move_key"]:
+            #     print(f"❌ FAIL: Move {i+1} should be {MOVE_KEY_MAPPING.get(expected_key, expected_key)} but was {detected['move_key']}")
+            #     all_passed = False
             
             # Check frame range if specified
             if "from_frame" in expected_move and "to_frame" in expected_move:

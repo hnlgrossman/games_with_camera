@@ -1,6 +1,6 @@
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from .base_movement import BaseMovement
-from src.constants import LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, Y_COORDINATE_INDEX, X_COORDINATE_INDEX, NOSE_INDEX
+from src.constants import LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, Y_COORDINATE_INDEX, X_COORDINATE_INDEX, NOSE_INDEX, JUMP
 
 if TYPE_CHECKING:
     from src.movement_analyzer import MovementAnalyzer # To avoid circular import
@@ -17,20 +17,24 @@ class JumpMovement(BaseMovement):
         self.is_left_foot_stable_y: bool = True
         self.is_right_foot_stable_y: bool = True
 
+        self.require_foots_stable_frames = 2
+
         # Motion state
         self.is_stable_for_detection: bool = True # Analogous to old is_stable_move["jump"]
 
         self.foot_x_distance_to_outrange = 0.01
+
+        self.foot_y_stable_distance = 0.005
         
         self.nose_y_distance = 0.06;
         self.motion_counter_nose: int = 0
-        self.require_nose_motion_frames: int = 3
+        self.require_nose_motion_frames: int = 2
     
 
     @property
     def detectable_moves(self) -> List[str]:
         """Returns the list of movement types this detector can detect."""
-        return ["Jump"]
+        return [JUMP]
 
     def _update_single_foot_stability(self, is_left_foot: bool) -> bool:
         """Updates stability for a single foot and returns its stability status."""
@@ -40,13 +44,13 @@ class JumpMovement(BaseMovement):
         counter_name = "left foot" if is_left_foot else "right foot"
         current_counter = self.stable_counter_left_foot if is_left_foot else self.stable_counter_right_foot
         
-        required_frames = self.get_required_stable_frames()
+        required_frames = self.require_foots_stable_frames
 
         # Using jump stability threshold from config
-        if foot_distance < self.config.stability_moves_threshold["jump"]:
+        if foot_distance < self.foot_y_stable_distance:
             current_counter += 1
             if self.debug:
-                self.logger.debug(f"JumpMovement: {counter_name.title()} stability counter: {current_counter}/{required_frames}")
+                self.logger.debug(f"JumpMovement: {counter_name.title()} stability counter: {current_counter}/{required_frames} diff: {foot_distance}")
             is_stable = current_counter >= required_frames
         else:
             if self.debug and current_counter > 0:
@@ -130,6 +134,6 @@ class JumpMovement(BaseMovement):
             
             if self.debug:
                 self.logger.debug(f"JumpMovement: Jump detected - Left foot diff: {left_foot_distance:.4f}, Right foot diff: {right_foot_distance:.4f}")
-            return "Jump"
+            return JUMP
             
         return None 

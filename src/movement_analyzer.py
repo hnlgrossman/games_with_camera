@@ -14,7 +14,8 @@ from src.constants import (
     LEFT_KNEE_INDEX, RIGHT_KNEE_INDEX,
     LEFT_SHOULDER_INDEX, RIGHT_SHOULDER_INDEX,
     X_COORDINATE_INDEX, Y_COORDINATE_INDEX, Z_COORDINATE_INDEX,
-    LEFT_HIP_INDEX, RIGHT_HIP_INDEX
+    LEFT_HIP_INDEX, RIGHT_HIP_INDEX,
+    STEP_RIGHT, STEP_LEFT, JUMP, BEND
 )
 
 class MovementAnalyzer:
@@ -51,7 +52,9 @@ class MovementAnalyzer:
             RIGHT_FOOT_INDEX: [{}, {}, {}],
             NOSE_INDEX: [{}, {}, {}],
             LEFT_SHOULDER_INDEX: [{}, {}, {}],
-            RIGHT_SHOULDER_INDEX: [{}, {}, {}]
+            RIGHT_SHOULDER_INDEX: [{}, {}, {}],
+            RIGHT_HIP_INDEX: [{}, {}, {}],
+            LEFT_HIP_INDEX: [{}, {}, {}],
         }
 
         # FPS adaptation
@@ -99,7 +102,8 @@ class MovementAnalyzer:
     def update_landmarks_history(self, landmark_points: np.ndarray) -> None:
         """Maintain history of landmark points for movement detection"""
         if self.prev_landmarks is None:
-            self.prev_landmarks = [landmark_points] * self.config.num_frames_to_check
+            # Initialize with copies of the first landmark_points
+            self.prev_landmarks = [np.copy(landmark_points) for _ in range(self.config.num_frames_to_check)]
         else:
             self.prev_landmarks.insert(0, landmark_points)
             self.prev_landmarks.pop()
@@ -137,6 +141,80 @@ class MovementAnalyzer:
                 
         return self.is_stable
 
+    def _try_set_base_height(self, landmark_points: np.ndarray) -> None:
+        """
+        Attempts to set the base_height if the person is standing straight and still.
+        This is called only if self.base_height is None.
+        """
+        if self.base_height is not None:
+            return
+
+        # Ensure enough frames have been processed for a meaningful stillness check
+        # self.config.num_frames_to_check should ideally be > 1
+        if self.frame_counter < self.config.num_frames_to_check or self.config.num_frames_to_check <= 1:
+            if self.debug:
+                self.logger.debug(
+                    f"Base height check: Not enough frames processed or num_frames_to_check too small "
+                    f"({self.frame_counter}/{self.config.num_frames_to_check}) for stillness check."
+                )
+            return
+
+        # Check vertical ordering (y is smaller for higher points)
+        nose_y = landmark_points[NOSE_INDEX][Y_COORDINATE_INDEX]
+        mid_shoulder_y = (landmark_points[LEFT_SHOULDER_INDEX][Y_COORDINATE_INDEX] + 
+                          landmark_points[RIGHT_SHOULDER_INDEX][Y_COORDINATE_INDEX]) / 2
+        mid_hip_y = (landmark_points[LEFT_HIP_INDEX][Y_COORDINATE_INDEX] + 
+                     landmark_points[RIGHT_HIP_INDEX][Y_COORDINATE_INDEX]) / 2
+        mid_knee_y = (landmark_points[LEFT_KNEE_INDEX][Y_COORDINATE_INDEX] + 
+                      landmark_points[RIGHT_KNEE_INDEX][Y_COORDINATE_INDEX]) / 2
+        mid_foot_y = (landmark_points[LEFT_FOOT_INDEX][Y_COORDINATE_INDEX] + 
+                      landmark_points[RIGHT_FOOT_INDEX][Y_COORDINATE_INDEX]) / 2
+
+        is_vertically_ordered = (nose_y < mid_shoulder_y < mid_hip_y < mid_knee_y < mid_foot_y)
+
+        # Check horizontal alignment
+        nose_x = landmark_points[NOSE_INDEX][X_COORDINATE_INDEX]
+        mid_shoulder_x = (landmark_points[LEFT_SHOULDER_INDEX][X_COORDINATE_INDEX] + 
+                          landmark_points[RIGHT_SHOULDER_INDEX][X_COORDINATE_INDEX]) / 2
+        mid_hip_x = (landmark_points[LEFT_HIP_INDEX][X_COORDINATE_INDEX] + 
+                     landmark_points[RIGHT_HIP_INDEX][X_COORDINATE_INDEX]) / 2
+        mid_foot_x = (landmark_points[LEFT_FOOT_INDEX][X_COORDINATE_INDEX] + 
+                      landmark_points[RIGHT_FOOT_INDEX][X_COORDINATE_INDEX]) / 2
+        
+        central_points_x = [nose_x, mid_shoulder_x, mid_hip_x, mid_foot_x]
+        x_spread = max(central_points_x) - min(central_points_x)
+        is_horizontally_aligned = x_spread < self.config.straight_pose_x_spread_threshold
+
+        # Check for stillness (nose movement)
+        # landmark_points is current, self.prev_landmarks[self.config.num_frames_to_check - 1] is oldest
+        nose_current_pos_xy = landmark_points[NOSE_INDEX][:2] 
+        nose_prev_pos_xy = self.prev_landmarks[self.config.num_frames_to_check - 1][NOSE_INDEX][:2]
+        nose_movement = np.linalg.norm(nose_current_pos_xy - nose_prev_pos_xy)
+        is_still = nose_movement < self.config.stillness_threshold
+
+        if is_vertically_ordered and is_horizontally_aligned and is_still:
+            calculated_height = mid_foot_y - nose_y  # Normalized height
+            if calculated_height > self.config.min_base_height_threshold:
+                self.base_height = calculated_height
+                if self.debug:
+                    self.logger.info(f"Base height SET to: {self.base_height:.4f} "
+                                     f"(Vertical: {is_vertically_ordered}, X-Spread: {x_spread:.4f}, "
+                                     f"Still (Nose Move): {nose_movement:.4f})")
+            elif self.debug:
+                self.logger.debug(f"Base height check: Calculated height {calculated_height:.4f} too small "
+                                  f"(threshold: {self.config.min_base_height_threshold}). Conditions met: "
+                                  f"Vertical: {is_vertically_ordered}, X-Spread: {x_spread:.4f}, Still: {is_still}.")
+        elif self.debug:
+            log_msg = "Base height check failed: "
+            if not is_vertically_ordered:
+                log_msg += (f"Vertical order incorrect (NoseY: {nose_y:.2f}, ShY: {mid_shoulder_y:.2f}, "
+                            f"HipY: {mid_hip_y:.2f}, KnY: {mid_knee_y:.2f}, FtY: {mid_foot_y:.2f}). ")
+            if not is_horizontally_aligned:
+                log_msg += f"X-Spread too large: {x_spread:.4f} (limit: {self.config.straight_pose_x_spread_threshold}). "
+            if not is_still:
+                log_msg += f"Not still (Nose Move): {nose_movement:.4f} (limit: {self.config.stillness_threshold})."
+            self.logger.debug(log_msg)
+
     def _are_required_landmarks_visible(self, landmarks) -> bool:
         """Check if all required landmarks are visible
         
@@ -171,11 +249,11 @@ class MovementAnalyzer:
             movement: The detected movement type
         """
         # Inform the appropriate movement detector that its movement was detected
-        if movement.startswith("Step"):
+        if movement == STEP_RIGHT or movement == STEP_LEFT:
             self.movement_detectors["step"].on_movement_detected()
-        elif movement == "Jump":
+        elif movement == JUMP:
             self.movement_detectors["jump"].on_movement_detected()
-        elif movement == "Bend":
+        elif movement == BEND:
             self.movement_detectors["bend"].on_movement_detected()
         
         # Play the movement sound if enabled
@@ -193,12 +271,19 @@ class MovementAnalyzer:
             
         # Check if all required landmarks are visible
         if not self._are_required_landmarks_visible(landmarks):
+            if self.debug:
+                self.logger.debug("Required landmarks not visible, cannot detect movement or set base height.")
             return None
             
         landmark_points = np.array([[lm.x, lm.y, lm.z] for lm in landmarks.landmark])
         self.frame_counter += 1
         
-        self.update_landmarks_history(landmark_points)
+        self.update_landmarks_history(landmark_points) # Keep history for movement and stillness checks
+        
+        # Attempt to set base_height if not already set
+        if self.base_height is None:
+            self._try_set_base_height(landmark_points)
+        
         self.map_points_distance()
         
         self.update_is_stable_general()  # This now updates all movement detectors
@@ -208,13 +293,21 @@ class MovementAnalyzer:
             nose = landmarks.landmark[NOSE_INDEX]
             left_foot = landmarks.landmark[LEFT_FOOT_INDEX]
             right_foot = landmarks.landmark[RIGHT_FOOT_INDEX]
-            left_hip = landmarks.landmark[LEFT_HIP_INDEX]
-            right_hip = landmarks.landmark[RIGHT_HIP_INDEX]
-            self.logger.debug(f"Left hip: x={left_hip.x:.4f}, y={left_hip.y:.4f}, z={left_hip.z:.4f}, visibility={left_hip.visibility:.2f}")
-            self.logger.debug(f"Right hip: x={right_hip.x:.4f}, y={right_hip.y:.4f}, z={right_hip.z:.4f}, visibility={right_hip.visibility:.2f}")
+
             self.logger.debug(f"Nose position: x={nose.x:.4f}, y={nose.y:.4f}, z={nose.z:.4f}, visibility={nose.visibility:.2f}")
             self.logger.debug(f"Left foot: x={left_foot.x:.4f}, y={left_foot.y:.4f}, z={left_foot.z:.4f}, visibility={left_foot.visibility:.2f}")
             self.logger.debug(f"Right foot: x={right_foot.x:.4f}, y={right_foot.y:.4f}, z={right_foot.z:.4f}, visibility={right_foot.visibility:.2f}")
+            left_shoulder_knee_dist = np.linalg.norm(landmark_points[LEFT_SHOULDER_INDEX] - landmark_points[LEFT_KNEE_INDEX])
+            right_shoulder_knee_dist = np.linalg.norm(landmark_points[RIGHT_SHOULDER_INDEX] - landmark_points[RIGHT_KNEE_INDEX])
+
+            if self.base_height and self.base_height > 1e-6:  # Check if base_height is set and not zero/too small
+                left_percentage = (left_shoulder_knee_dist / self.base_height) * 100
+                right_percentage = (right_shoulder_knee_dist / self.base_height) * 100
+                self.logger.debug(f"Left Shoulder to Left Knee: {left_shoulder_knee_dist:.4f} ({left_percentage:.2f}% of body height)")
+                self.logger.debug(f"Right Shoulder to Right Knee: {right_shoulder_knee_dist:.4f} ({right_percentage:.2f}% of body height)")
+            else:
+                self.logger.debug(f"Distance Left Shoulder to Left Knee: {left_shoulder_knee_dist:.4f} (Body height not available for percentage)")
+                self.logger.debug(f"Distance Right Shoulder to Right Knee: {right_shoulder_knee_dist:.4f} (Body height not available for percentage)")
 
         # Check if any detector is already in motion
         if any(detector.is_in_motion for detector in self.movement_detectors.values()):

@@ -16,7 +16,9 @@ class PoseDetector:
         self.pose = self.mp_pose.Pose(
             min_detection_confidence=config.min_detection_confidence,
             min_tracking_confidence=config.min_tracking_confidence,
-            model_complexity=0  # Use lightweight model for better performance
+            model_complexity=0,  # Use lightweight model for better performance
+            # static_image_mode=False,  # Set to False for video processing
+            # smooth_landmarks=True  # Enable landmark smoothing for better performance
         )
         self.mp_drawing = mp.solutions.drawing_utils
         

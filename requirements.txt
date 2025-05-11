@@ -1,4 +1,9 @@
-opencv-python>=4.8.0
-mediapipe>=0.10.0
-numpy>=1.24.0
-pygame>=2.5.0 
+keyboard==0.13.5
+mediapipe==0.10.5
+numpy==1.24.3
+opencv-contrib-python==4.11.0.86
+opencv-python==4.7.0.72
+pygame==2.6.1
+pynput==1.8.1
+sounddevice==0.5.1
+vgamepad==0.1.0

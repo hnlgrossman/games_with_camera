@@ -1,6 +1,6 @@
 from typing import Optional, Tuple, TYPE_CHECKING, List
 from .base_movement import BaseMovement
-from src.constants import LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, X_COORDINATE_INDEX
+from src.constants import LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, X_COORDINATE_INDEX, STEP_RIGHT, STEP_LEFT
 
 if TYPE_CHECKING:
     from src.movement_analyzer import MovementAnalyzer # To avoid circular import
@@ -23,7 +23,7 @@ class StepMovement(BaseMovement):
     @property
     def detectable_moves(self) -> List[str]:
         """Returns the list of movement types this detector can detect."""
-        return ["Step Left", "Step Right"]
+        return [STEP_LEFT, STEP_RIGHT]
 
     def _update_single_foot_stability(self, is_left_foot: bool) -> bool:
         """Updates stability for a single foot and returns its stability status."""
@@ -100,6 +100,9 @@ class StepMovement(BaseMovement):
         right_foot_distance, right_foot_is_left = self.analyzer.get_points_distance(RIGHT_FOOT_INDEX, X_COORDINATE_INDEX)
         left_foot_distance, left_foot_is_left = self.analyzer.get_points_distance(LEFT_FOOT_INDEX, X_COORDINATE_INDEX)
 
+        if self.debug:
+            self.logger.debug(f"StepMovement: Left foot distance: {left_foot_distance:.4f}, direction left: {left_foot_is_left}")
+            self.logger.debug(f"StepMovement: Right foot distance: {right_foot_distance:.4f}, direction left: {right_foot_is_left}")
         if not self.is_stable_for_detection and not right_foot_is_left and right_foot_distance > self.config.step_threshold:
             # Check if this detection aligns with the dominant unstable foot from _determine_stability_criterion
             # This is a simplified check; _determine_stability_criterion primarily influences is_stable_for_detection
@@ -110,7 +113,7 @@ class StepMovement(BaseMovement):
             if "right_foot" in stability_criterion_name or self.stable_counter_left_foot == 0 : # Favor if right foot is the one less stable or if left is completely stable
                 if self.debug:
                     self.logger.debug(f"StepMovement: Step Right detected - Diff: {right_foot_distance:.4f}")
-                return "Step Right"
+                return STEP_RIGHT
 
         # Step Left Detection
         
@@ -123,6 +126,6 @@ class StepMovement(BaseMovement):
             if "left_foot" in stability_criterion_name or self.stable_counter_right_foot == 0: # Favor if left foot is the one less stable or if right is completely stable
                 if self.debug:
                     self.logger.debug(f"StepMovement: Step Left detected - Diff: {left_foot_distance:.4f}")
-                return "Step Left"
+                return STEP_LEFT
                 
         return None 

@@ -13,5 +13,21 @@
       { "move_key": "step_right", "from_frame": 209, "to_frame": 211 },
       { "move_key": "step_left", "from_frame": 223, "to_frame": 225 }
     ]
+  },
+  "test_jump_sequence": {
+    "video_path": "C:/projects/games_with_camera/src/tests/moves_videos/multy_jump_2.mp4",
+    "moves": [
+      { "move_key": "jump", "from_frame": 103, "to_frame": 105 },
+      { "move_key": "jump", "from_frame": 155, "to_frame": 157 },
+      { "move_key": "jump", "from_frame": 208, "to_frame": 210 }
+    ]
+  },
+  "test_bend_sequence": {
+    "video_path": "C:/projects/games_with_camera/src/tests/moves_videos/multy_bend_2.mp4",
+    "moves": [
+      { "move_key": "bend", "from_frame": 77, "to_frame": 79 },
+      { "move_key": "bend", "from_frame": 138, "to_frame": 140 },
+      { "move_key": "bend", "from_frame": 201, "to_frame": 203 }
+    ]
   }
 }

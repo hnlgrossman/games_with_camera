@@ -4,6 +4,7 @@
   "description": "A project for games using camera input",
   "scripts": {
     "start": "python src/main.py",
+    "install": "pip install -r requirements.txt",
     "test": "python src/tests/moves_tests.py",
     "install-deps": "pip install -r requirements.txt",
     "clean": "rm -rf __pycache__ && rm -rf *.egg-info",

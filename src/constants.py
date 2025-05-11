@@ -16,3 +16,10 @@ RIGHT_HIP_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_HIP
 X_COORDINATE_INDEX = 0
 Y_COORDINATE_INDEX = 1
 Z_COORDINATE_INDEX = 2 
+
+
+# events
+STEP_RIGHT="step_right"
+STEP_LEFT="step_left"
+JUMP="jump"
+BEND="bend"

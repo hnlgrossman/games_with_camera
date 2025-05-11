@@ -2,6 +2,7 @@ import pygame
 import threading
 import os
 from pathlib import Path
+from src.constants import STEP_RIGHT, STEP_LEFT, JUMP, BEND
 
 
 class SoundManager:
@@ -25,10 +26,10 @@ class SoundManager:
         
         # Pre-load sounds
         self.sounds = {
-            "Step Left": self._load_sound("left.mp3"),
-            "Step Right": self._load_sound("right.mp3"),
-            "Jump": self._load_sound("up.mp3"),  # Updated to match movement type
-            "Bend": self._load_sound("down.mp3")  # Updated to match movement type
+            STEP_LEFT: self._load_sound("left.mp3"),
+            STEP_RIGHT: self._load_sound("right.mp3"),
+            JUMP: self._load_sound("up.mp3"),  # Updated to match movement type
+            BEND: self._load_sound("down.mp3")  # Updated to match movement type
         }
         
         # Print loaded sounds status
@@ -57,7 +58,7 @@ class SoundManager:
         """Play sound for the given movement type at 2x speed, non-blocking
         
         Args:
-            movement_type: The type of movement ("Step Left", "Step Right", etc)
+            movement_type: The type of movement (STEP_LEFT, STEP_RIGHT, etc)
         """
         # Get the appropriate sound
         if movement_type in self.sounds and self.sounds[movement_type]:
