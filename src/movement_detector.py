@@ -15,12 +15,15 @@ class PoseDetector:
         self.mp_pose = mp.solutions.pose
         self.pose = self.mp_pose.Pose(
             min_detection_confidence=config.min_detection_confidence,
-            min_tracking_confidence=config.min_tracking_confidence
+            min_tracking_confidence=config.min_tracking_confidence,
+            model_complexity=0  # Use lightweight model for better performance
         )
         self.mp_drawing = mp.solutions.drawing_utils
         
     def process_frame(self, image: np.ndarray) -> Optional[mp.solutions.pose.PoseLandmark]:
         """Process a single frame and return pose landmarks"""
+        # resized_frame = cv2.resize(image, (480, 320))
+
         rgb_image = cv2.cvtColor(image, cv2.COLOR_BGR2RGB)
         results = self.pose.process(rgb_image)
         return results.pose_landmarks
@@ -63,6 +66,7 @@ class MovementDetector:
         self.prev_frame_time = 0.0 # Initialize as float
         self.curr_frame_time = 0.0 # Initialize as float
         self.current_fps = 30.0  # Default FPS, will be overridden by video's actual FPS if applicable
+        self.last_fps_print_time = 0.0  # Track when we last printed FPS
         
         # Get logger instance. Configuration is handled by setup_logging in main.py
         self.logger = logging.getLogger('MovementDetector')
@@ -140,7 +144,7 @@ class MovementDetector:
                 # else for video, self.current_fps is already set to original_fps and remains constant.
                 
                 # Pass the FPS to movement analyzer
-                self.movement_analyzer.update_fps(self.current_fps)
+                # self.movement_analyzer.update_fps(self.current_fps)
                 
                 ret, image = cap.read()
                 
@@ -167,7 +171,10 @@ class MovementDetector:
                 
                 if landmarks:
                     self.pose_detector.draw_landmarks(image, landmarks)
+                    # start_time = time.time()
                     movement = self.movement_analyzer.detect_movement(landmarks)
+                    # end_time = time.time()
+                    # print(f"Movement detection took: {(end_time - start_time) * 1000:.2f} ms")
                     if movement:
                         self.process_movement(movement, {"frame": self.frame_counter, "fps": round(self.current_fps, 1)})
                 else:
@@ -177,6 +184,12 @@ class MovementDetector:
                 # Display FPS on the image
                 fps_text = f"FPS: {self.current_fps:.1f}"
                 cv2.putText(image, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
+                
+                # Print FPS to console once per second
+                if time.time() - self.last_fps_print_time >= 1.0:
+                    # print(f"Current FPS: {self.current_fps:.1f}")
+                    self.last_fps_print_time = time.time()
+                
                 
                 if not self.isTest:
                     cv2.imshow('Movement Detection', image)
@@ -197,7 +210,12 @@ class MovementDetector:
                         break
                 
                 self.frame_counter += 1
-                self.logger.debug(f"Frame {self.frame_counter} processed ****************\n")
+                                # Measure overall iteration time
+                # iteration_end_time = time.time()
+                # print(f"Full frame processing took: {(iteration_end_time - self.curr_frame_time) * 1000:.2f} ms")
+
+                if self.debug:
+                    self.logger.debug(f"Frame {self.frame_counter} processed ****************\n")
                 
         except Exception as e:
             print(f"An error occurred during processing: {str(e)}")

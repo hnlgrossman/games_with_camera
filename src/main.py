@@ -34,11 +34,12 @@ def main():
         useCamera=True,
         callback=movement_callback,
         isTest=False,
-        debug=False
+        debug=True
     )
     
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multi_jumps.mp4"
+    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
+    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
+    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multi_jumps.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multi_bend.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/check-z-with-jump.mp4"
     

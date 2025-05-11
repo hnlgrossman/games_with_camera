@@ -17,7 +17,7 @@ def trigger_left():
 
 def trigger_right():
     """Trigger right movement action"""
-    tester.press_dpad_right()
+    tester.press_dpad_rsight()
 
 # You can set controller type with:
 # controller = Controller(controller_type="ds4")  # For PlayStation controller 

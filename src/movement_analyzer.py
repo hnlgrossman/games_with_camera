@@ -218,7 +218,8 @@ class MovementAnalyzer:
 
         # Check if any detector is already in motion
         if any(detector.is_in_motion for detector in self.movement_detectors.values()):
-            self.logger.debug(f"MovementAnalyzer: Movement already in motion, skipping detection because of {[detector.name for detector in self.movement_detectors.values() if detector.is_in_motion]}")
+            if self.debug:
+                self.logger.debug(f"MovementAnalyzer: Movement already in motion, skipping detection because of {[detector.name for detector in self.movement_detectors.values() if detector.is_in_motion]}")
             return None
 
         # Try to detect movements using specialized detectors

@@ -7,14 +7,14 @@ class MovementConfig:
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5
     required_stable_frames_per_30_fps: int = 4
-    jump_threshold: float = 0.02
+    jump_threshold: float = 0.01
     step_threshold: float = 0.02
     bend_threshold: float = 0.06
     cooldown_period: float = 1.0
     stability_threshold: float = 0.028
     stability_moves_threshold = {"jump": 0.01, "bend": 0.01}
     num_frames_to_check: int = 5
-    camera_index: int = 0  # Camera device index to use 
+    camera_index: int = 1  # Camera device index to use 
     visibility_threshold: float = 0.5  # Minimum visibility score for landmarks to be considered
     sound_enabled: bool = False  # Whether to play movement sounds
     sound_volume: float = 0.7  # Sound volume level (0.0 to 1.0)
