@@ -297,6 +297,14 @@ class MovementAnalyzer:
             self.logger.debug(f"Nose position: x={nose.x:.4f}, y={nose.y:.4f}, z={nose.z:.4f}, visibility={nose.visibility:.2f}")
             self.logger.debug(f"Left foot: x={left_foot.x:.4f}, y={left_foot.y:.4f}, z={left_foot.z:.4f}, visibility={left_foot.visibility:.2f}")
             self.logger.debug(f"Right foot: x={right_foot.x:.4f}, y={right_foot.y:.4f}, z={right_foot.z:.4f}, visibility={right_foot.visibility:.2f}")
+            
+            # Add debug logs for left and right shoulder distance and direction
+            # left_shoulder_x_dist, left_shoulder_x_dir = self.get_points_distance(LEFT_SHOULDER_INDEX, X_COORDINATE_INDEX)
+            # right_shoulder_x_dist, right_shoulder_x_dir = self.get_points_distance(RIGHT_SHOULDER_INDEX, X_COORDINATE_INDEX)
+            
+            # self.logger.debug(f"Left shoulder X: distance={left_shoulder_x_dist:.4f}, direction={'decreasing' if left_shoulder_x_dir else 'increasing'}")
+            # self.logger.debug(f"Right shoulder X: distance={right_shoulder_x_dist:.4f}, direction={'decreasing' if right_shoulder_x_dir else 'increasing'}")
+            
             left_shoulder_knee_dist = np.linalg.norm(landmark_points[LEFT_SHOULDER_INDEX] - landmark_points[LEFT_KNEE_INDEX])
             right_shoulder_knee_dist = np.linalg.norm(landmark_points[RIGHT_SHOULDER_INDEX] - landmark_points[RIGHT_KNEE_INDEX])
 

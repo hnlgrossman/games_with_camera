@@ -1,6 +1,9 @@
 from typing import Optional, TYPE_CHECKING, List, Tuple
 from .base_movement import BaseMovement
-from src.constants import LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, Y_COORDINATE_INDEX, X_COORDINATE_INDEX, NOSE_INDEX, JUMP
+from src.constants import (
+    LEFT_FOOT_INDEX, RIGHT_FOOT_INDEX, Y_COORDINATE_INDEX, X_COORDINATE_INDEX, 
+    NOSE_INDEX, JUMP, LEFT_HIP_INDEX, RIGHT_HIP_INDEX
+)
 
 if TYPE_CHECKING:
     from src.movement_analyzer import MovementAnalyzer # To avoid circular import
@@ -22,7 +25,7 @@ class JumpMovement(BaseMovement):
         # Motion state
         self.is_stable_for_detection: bool = True # Analogous to old is_stable_move["jump"]
 
-        self.foot_x_distance_to_outrange = 0.01
+        self.hip_x_distance_to_outrange = 0.01
 
         self.foot_y_stable_distance = 0.005
         
@@ -107,15 +110,16 @@ class JumpMovement(BaseMovement):
         if self.is_in_motion or self.motion_counter_nose < self.require_nose_motion_frames: # If already jumping, don't detect another jump
             return None
         
-
-        # Get distance and direction for both feet
-        left_foot_distance_x, left_foot_dir_left = self.analyzer.get_points_distance(LEFT_FOOT_INDEX, X_COORDINATE_INDEX)
-        right_foot_distance_X, right_foot_dir_left = self.analyzer.get_points_distance(RIGHT_FOOT_INDEX, X_COORDINATE_INDEX)
-        if (left_foot_dir_left and left_foot_distance_x > self.foot_x_distance_to_outrange):
-            print("fall 1 ++++++++++++++++++")
+        # Get distance and direction for both hips
+        left_hip_distance_x, left_hip_dir_left = self.analyzer.get_points_distance(LEFT_HIP_INDEX, X_COORDINATE_INDEX)
+        right_hip_distance_x, right_hip_dir_left = self.analyzer.get_points_distance(RIGHT_HIP_INDEX, X_COORDINATE_INDEX)
+        if (left_hip_dir_left and left_hip_distance_x > self.hip_x_distance_to_outrange):
+            if self.debug:
+                self.logger.debug("JumpMovement: Left hip out of range")
             return None
-        if(not right_foot_dir_left and right_foot_distance_X > self.foot_x_distance_to_outrange):
-            print(f"fall 2 ++++++++++++++++++ {right_foot_distance_X}")
+        if(not right_hip_dir_left and right_hip_distance_x > self.hip_x_distance_to_outrange):
+            if self.debug:
+                self.logger.debug(f"JumpMovement: Right hip out of range: {right_hip_distance_x}")
             return None
 
         left_foot_distance, left_foot_dir_up = self.analyzer.get_points_distance(LEFT_FOOT_INDEX, Y_COORDINATE_INDEX)

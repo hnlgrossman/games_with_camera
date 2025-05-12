@@ -7,6 +7,8 @@ from typing import Optional, Callable, Dict, Any
 from config import MovementConfig
 from movement_analyzer import MovementAnalyzer
 from logger import setup_logging
+import os
+from datetime import datetime
 
 class PoseDetector:
     """Handles MediaPipe pose detection and landmark processing"""
@@ -69,7 +71,13 @@ class MovementDetector:
         self.curr_frame_time = 0.0 # Initialize as float
         self.current_fps = 30.0  # Default FPS, will be overridden by video's actual FPS if applicable
         self.last_fps_print_time = 0.0  # Track when we last printed FPS
-        
+
+        # Recording attributes
+        self.is_recording = False
+        self.video_writer: Optional[cv2.VideoWriter] = None
+        self.recording_output_dir = "recorded_setions"
+        self.current_recording_filename: Optional[str] = None
+
         # Get logger instance. Configuration is handled by setup_logging in main.py
         self.logger = logging.getLogger('MovementDetector')
         self.logger.info(f"MovementDetector initialized. Debug mode: {self.debug}")
@@ -86,6 +94,10 @@ class MovementDetector:
         self.logger.info("Starting camera/video processing")
         
         total_frames = 0 
+
+        # Ensure recording directory exists
+        os.makedirs(self.recording_output_dir, exist_ok=True)
+        self.logger.info(f"Recording output directory set to: {self.recording_output_dir}")
 
         if self.useCamera:
             cap = cv2.VideoCapture(self.config.camera_index)  # Use camera with index from config
@@ -168,7 +180,12 @@ class MovementDetector:
                 new_width = 500
                 new_height = int(height * (new_width / width))
                 image = cv2.resize(image, (new_width, new_height))
-                
+                # Get frame dimensions for video writer - use the resized dimensions
+                frame_height, frame_width = image.shape[:2]
+
+                # Create a copy of the frame for recording before any overlays are added
+                original_frame_for_recording = image.copy()
+
                 landmarks = self.pose_detector.process_frame(image)
                 
                 if landmarks:
@@ -186,7 +203,13 @@ class MovementDetector:
                 # Display FPS on the image
                 fps_text = f"FPS: {self.current_fps:.1f}"
                 cv2.putText(image, fps_text, (10, 30), cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
-                
+
+                # Add recording indicator
+                if self.is_recording:
+                    cv2.circle(image, (frame_width - 30, 30), 10, (0, 0, 255), -1) # Red circle for recording
+                    rec_text = "REC"
+                    cv2.putText(image, rec_text, (frame_width - 70, 35), cv2.FONT_HERSHEY_SIMPLEX, 0.5, (0, 0, 255), 2)
+
                 # Print FPS to console once per second
                 if time.time() - self.last_fps_print_time >= 1.0:
                     # print(f"Current FPS: {self.current_fps:.1f}")
@@ -210,7 +233,37 @@ class MovementDetector:
                     if key == 27:  # ESC key
                         self.logger.info("Processing interrupted by user (ESC pressed).")
                         break
-                
+
+                    # Handle recording toggle ('r' key)
+                    if key == ord('r'):
+                        if not self.is_recording:
+                            # Start recording
+                            timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                            self.current_recording_filename = os.path.join(self.recording_output_dir, f"rec_{timestamp}.mp4")
+                            # Use 'mp4v' codec for MP4 files. Adjust if needed for other formats/OS.
+                            fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+                            # Use current (potentially dynamic) FPS and actual frame dimensions
+                            self.video_writer = cv2.VideoWriter(self.current_recording_filename, fourcc, self.current_fps, (frame_width, frame_height))
+                            if self.video_writer.isOpened():
+                                self.is_recording = True
+                                self.logger.info(f"Started recording to {self.current_recording_filename}")
+                            else:
+                                self.logger.error(f"Failed to open video writer for {self.current_recording_filename}")
+                                self.video_writer = None # Ensure it's None if failed
+                        else:
+                            # Stop recording
+                            if self.video_writer:
+                                self.video_writer.release()
+                                self.logger.info(f"Stopped recording. Saved to {self.current_recording_filename}")
+                            self.is_recording = False
+                            self.video_writer = None
+                            self.current_recording_filename = None
+
+                # Write frame if recording
+                if self.is_recording and self.video_writer:
+                    # Write the original, clean frame to the video
+                    self.video_writer.write(original_frame_for_recording)
+
                 self.frame_counter += 1
                                 # Measure overall iteration time
                 # iteration_end_time = time.time()
@@ -224,5 +277,12 @@ class MovementDetector:
             self.logger.error(f"An error occurred during processing: {str(e)}", exc_info=True)
         finally:
             self.logger.info("Releasing video capture and destroying OpenCV windows.")
+            # Ensure recorder is released if active
+            if self.is_recording and self.video_writer:
+                self.video_writer.release()
+                self.logger.info(f"Recording stopped due to program exit. Saved to {self.current_recording_filename}")
+                self.is_recording = False
+                self.video_writer = None
+
             cap.release()
             cv2.destroyAllWindows() 
