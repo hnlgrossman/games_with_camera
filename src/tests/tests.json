@@ -29,5 +29,12 @@
       { "move_key": "bend", "from_frame": 138, "to_frame": 140 },
       { "move_key": "bend", "from_frame": 201, "to_frame": 203 }
     ]
+  },
+  "test_jump_and_fast_left": {
+    "video_path": "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4",
+    "moves": [
+      { "move_key": "jump", "from_frame": 59, "to_frame": 61 },
+      { "move_key": "step_left", "from_frame": 74, "to_frame": 76 }
+    ]
   }
 }

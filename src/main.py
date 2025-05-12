@@ -31,13 +31,14 @@ def main():
     # Create detector with debug mode enabled
     detector = MovementDetector(
         config=config,
-        useCamera=True,
+        useCamera=False,
         callback=movement_callback,
         isTest=False,
-        debug=True
+        debug=False
     )
     
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
+    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
+    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_jump_2.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_bend_2.mp4"

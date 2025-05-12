@@ -14,20 +14,27 @@ class JumpMovement(BaseMovement):
     def __init__(self, analyzer: 'MovementAnalyzer'):
         super().__init__(analyzer)
 
-        # Stability counters and flags
+        # Stability counters and flags for Y-axis
         self.stable_counter_left_foot: int = 0
         self.stable_counter_right_foot: int = 0
         self.is_left_foot_stable_y: bool = True
         self.is_right_foot_stable_y: bool = True
+        
+        # Stability counters and flags for X-axis
+        self.stable_counter_left_foot_x: int = 0
+        self.stable_counter_right_foot_x: int = 0
+        self.is_left_foot_stable_x: bool = True
+        self.is_right_foot_stable_x: bool = True
 
-        self.require_foots_stable_frames = 2
+        self.require_foots_stable_frames = 3
 
         # Motion state
         self.is_stable_for_detection: bool = True # Analogous to old is_stable_move["jump"]
 
         self.hip_x_distance_to_outrange = 0.01
 
-        self.foot_y_stable_distance = 0.005
+        self.foot_y_stable_distance = 0.01
+        self.foot_x_stable_distance = 0.01 # New threshold for X stability
         
         self.nose_y_distance = 0.06;
         self.motion_counter_nose: int = 0
@@ -42,31 +49,55 @@ class JumpMovement(BaseMovement):
     def _update_single_foot_stability(self, is_left_foot: bool) -> bool:
         """Updates stability for a single foot and returns its stability status."""
         foot_index = LEFT_FOOT_INDEX if is_left_foot else RIGHT_FOOT_INDEX
-        foot_distance, _ = self.analyzer.get_points_distance(foot_index, Y_COORDINATE_INDEX)
+        foot_distance_y, _ = self.analyzer.get_points_distance(foot_index, Y_COORDINATE_INDEX)
+        foot_distance_x, _ = self.analyzer.get_points_distance(foot_index, X_COORDINATE_INDEX)
         
         counter_name = "left foot" if is_left_foot else "right foot"
-        current_counter = self.stable_counter_left_foot if is_left_foot else self.stable_counter_right_foot
+        current_counter_y = self.stable_counter_left_foot if is_left_foot else self.stable_counter_right_foot
+        current_counter_x = self.stable_counter_left_foot_x if is_left_foot else self.stable_counter_right_foot_x
         
         required_frames = self.require_foots_stable_frames
 
-        # Using jump stability threshold from config
-        if foot_distance < self.foot_y_stable_distance:
-            current_counter += 1
+        # Check Y stability
+        if foot_distance_y < self.foot_y_stable_distance:
+            current_counter_y += 1
             if self.debug:
-                self.logger.debug(f"JumpMovement: {counter_name.title()} stability counter: {current_counter}/{required_frames} diff: {foot_distance}")
-            is_stable = current_counter >= required_frames
+                self.logger.debug(f"JumpMovement: {counter_name.title()} Y stability counter: {current_counter_y}/{required_frames} diff: {foot_distance_y:.4f}")
+            is_stable_y = current_counter_y >= required_frames
         else:
-            if self.debug and current_counter > 0:
-                self.logger.debug(f"JumpMovement: Reset {counter_name} stability counter. Distance: {foot_distance:.4f}")
-            current_counter = 0
-            is_stable = False
+            if self.debug and current_counter_y > 0:
+                self.logger.debug(f"JumpMovement: Reset {counter_name} Y stability counter")
+            current_counter_y = 0
+            is_stable_y = False
+
+        # Check X stability
+        if foot_distance_x < self.foot_x_stable_distance:
+            current_counter_x += 1
+            if self.debug:
+                self.logger.debug(f"JumpMovement: {counter_name.title()} X stability counter: {current_counter_x}/{required_frames} diff: {foot_distance_x:.4f}")
+            is_stable_x = current_counter_x >= required_frames
+        else:
+            if self.debug and current_counter_x > 0:
+                self.logger.debug(f"JumpMovement: Reset {counter_name} X stability counter")
+            current_counter_x = 0
+            is_stable_x = False
+
+        if self.debug:
+            self.logger.debug(f"JumpMovement: TEMP {counter_name} Y diff {foot_distance_y:.4f}, X diff {foot_distance_x:.4f}")
             
         if is_left_foot:
-            self.stable_counter_left_foot = current_counter
-            self.is_left_foot_stable_y = is_stable
+            self.stable_counter_left_foot = current_counter_y
+            self.is_left_foot_stable_y = is_stable_y
+            self.stable_counter_left_foot_x = current_counter_x
+            self.is_left_foot_stable_x = is_stable_x
         else:
-            self.stable_counter_right_foot = current_counter
-            self.is_right_foot_stable_y = is_stable
+            self.stable_counter_right_foot = current_counter_y
+            self.is_right_foot_stable_y = is_stable_y
+            self.stable_counter_right_foot_x = current_counter_x
+            self.is_right_foot_stable_x = is_stable_x
+
+        # Overall foot stability requires both X and Y to be stable
+        is_stable = is_stable_y and is_stable_x
         return is_stable
     
     def _update_nose_motion_counter(self):
@@ -94,10 +125,13 @@ class JumpMovement(BaseMovement):
 
         self._update_nose_motion_counter()
         # Jump is stable for detection only when both feet are stable
-        self.is_stable_for_detection = self.is_left_foot_stable_y and self.is_right_foot_stable_y
+        # Update: requires at least one foot to be stable in BOTH X and Y axes
+        left_foot_stable = self.is_left_foot_stable_y and self.is_left_foot_stable_x
+        right_foot_stable = self.is_right_foot_stable_y and self.is_right_foot_stable_x
+        self.is_stable_for_detection = left_foot_stable or right_foot_stable
         
         if self.debug:
-            self.logger.debug(f"JumpMovement: Stability for detection (both feet stable): {self.is_stable_for_detection}")
+            self.logger.debug(f"JumpMovement: Stability for detection (at least one foot stable X&Y): {self.is_stable_for_detection}")
 
         if self.is_stable_for_detection:
             if self.is_in_motion:
