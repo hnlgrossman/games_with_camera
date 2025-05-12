@@ -4,11 +4,11 @@ from typing import Optional, Any, List
 class BaseMovement(ABC):
     """Abstract base class for movement detection."""
 
-    def __init__(self, analyzer: Any):
+    def __init__(self, analyzer: Any, debug: bool = False):
         self.analyzer = analyzer
         self.config = analyzer.config
         self.logger = analyzer.logger
-        self.debug = analyzer.debug
+        self.debug = debug if analyzer.debug else False
         self.is_in_motion: bool = False # Tracks if the movement is currently active
 
     @abstractmethod
@@ -35,10 +35,7 @@ class BaseMovement(ABC):
         This helps for API discoverability and documentation.
         """
         pass
-
-    def get_required_stable_frames(self) -> int:
-        """Helper to get the dynamically updated required_stable_frames from analyzer."""
-        return self.analyzer.required_stable_frames
+    
 
     def on_movement_detected(self) -> None:
         """Called by MovementAnalyzer when this movement is detected."""

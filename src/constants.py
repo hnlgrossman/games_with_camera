@@ -3,6 +3,8 @@ import mediapipe as mp
 # Landmark indices for common body parts
 LEFT_FOOT_INDEX = 32
 RIGHT_FOOT_INDEX = 31
+LEFT_HEEL_INDEX = 29
+RIGHT_HEEL_INDEX = 30
 NOSE_INDEX = mp.solutions.pose.PoseLandmark.NOSE
 LEFT_KNEE_INDEX = mp.solutions.pose.PoseLandmark.LEFT_KNEE
 RIGHT_KNEE_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_KNEE

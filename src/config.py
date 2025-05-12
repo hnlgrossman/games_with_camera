@@ -7,7 +7,7 @@ class MovementConfig:
     min_detection_confidence: float = 0.5
     min_tracking_confidence: float = 0.5
     required_stable_frames_per_30_fps: int = 4
-    jump_threshold: float = 0.005
+    jump_threshold: float = 0.012
     step_threshold: float = 0.04
     bend_threshold: float = 0.06
     cooldown_period: float = 1.0

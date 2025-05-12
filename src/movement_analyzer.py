@@ -15,6 +15,7 @@ from src.constants import (
     LEFT_SHOULDER_INDEX, RIGHT_SHOULDER_INDEX,
     X_COORDINATE_INDEX, Y_COORDINATE_INDEX, Z_COORDINATE_INDEX,
     LEFT_HIP_INDEX, RIGHT_HIP_INDEX,
+    LEFT_HEEL_INDEX, RIGHT_HEEL_INDEX,
     STEP_RIGHT, STEP_LEFT, JUMP, BEND
 )
 
@@ -55,6 +56,8 @@ class MovementAnalyzer:
             RIGHT_SHOULDER_INDEX: [{}, {}, {}],
             RIGHT_HIP_INDEX: [{}, {}, {}],
             LEFT_HIP_INDEX: [{}, {}, {}],
+            LEFT_HEEL_INDEX: [{}, {}, {}],
+            RIGHT_HEEL_INDEX: [{}, {}, {}],
         }
 
         # FPS adaptation
@@ -63,9 +66,9 @@ class MovementAnalyzer:
         
         # Initialize movement detectors
         self.movement_detectors: Dict[str, BaseMovement] = {
-            "step": StepMovement(self),
-            "jump": JumpMovement(self),
-            "bend": BendMovement(self)
+            "step": StepMovement(self, debug=True),
+            "jump": JumpMovement(self, debug=False),
+            "bend": BendMovement(self, debug=False)
         }
         
         # Initialize sound manager only if sound is enabled

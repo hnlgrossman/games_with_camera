@@ -13,8 +13,8 @@ if TYPE_CHECKING:
 class BendMovement(BaseMovement):
     """Detects bend movements."""
 
-    def __init__(self, analyzer: 'MovementAnalyzer'):
-        super().__init__(analyzer)
+    def __init__(self, analyzer: 'MovementAnalyzer', debug: bool = False):
+        super().__init__(analyzer, debug)
 
         # Stability counters and flags for shoulders
         self.stable_counter_left_shoulder: int = 0
@@ -36,6 +36,8 @@ class BendMovement(BaseMovement):
 
         self.foot_x_distance_to_outrange = 0.01
 
+        self.get_required_stable_frames = 4
+
 
         self.nose_y_distance = 0.01
         
@@ -55,7 +57,7 @@ class BendMovement(BaseMovement):
         counter_name = "left shoulder" if is_left_shoulder else "right shoulder"
         current_counter = self.stable_counter_left_shoulder if is_left_shoulder else self.stable_counter_right_shoulder
         
-        required_frames = self.get_required_stable_frames()
+        required_frames = self.get_required_stable_frames
 
         # Using bend stability threshold from config
         if shoulder_distance < self.config.stability_moves_threshold.get("bend", 0.01):
@@ -90,7 +92,7 @@ class BendMovement(BaseMovement):
         else: # Y_COORDINATE_INDEX
             current_counter = self.stable_counter_left_foot_y if is_left_foot else self.stable_counter_right_foot_y
             
-        required_frames = self.get_required_stable_frames()
+        required_frames = self.get_required_stable_frames
 
         # Using a general stability threshold, consider if a specific one for feet is needed
         # For now, using the "bend" stability threshold as a placeholder, this might need adjustment

@@ -37,12 +37,13 @@ def main():
         debug=False
     )
     
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
+    # video_path = "C:/projects/games_with_camera/recorded_setions/rec_20250512_213129.mp4"
+    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_jump_2.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_bend_2.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/mix.mp4"
+    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/mix_2.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/check-z-with-jump.mp4"
     
     try:
