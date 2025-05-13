@@ -1,23 +1,24 @@
-# from controller import ControllerTester
+from controller import ControllerTester
 
 # Initialize controller tester with default Xbox 360 type
-# tester = ControllerTester(controller_type="xbox360")
+tester = ControllerTester(controller_type="xbox360")
 
 def trigger_up():
     """Trigger up movement action"""
-    # tester.press_dpad_up()
+    tester.press_dpad_up()
 
 def trigger_down():
     """Trigger down movement action"""
-    # tester.press_dpad_down()
+    tester.press_dpad_down()
 
 def trigger_left():
     """Trigger left movement action"""
-    # tester.press_dpad_left()
+    tester.press_dpad_left()
 
 def trigger_right():
+    print("Trigger right")
     """Trigger right movement action"""
-    # tester.press_dpad_rsight()
+    tester.press_dpad_right()
 
 # You can set controller type with:
 # controller = Controller(controller_type="ds4")  # For PlayStation controller 

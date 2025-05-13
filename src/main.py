@@ -1,6 +1,6 @@
 from config import MovementConfig
 from movement_detector import MovementDetector
-from triggers import trigger_left, trigger_right
+from triggers import trigger_left, trigger_right, trigger_up, trigger_down
 from typing import Dict, Any
 import logging
 from logger import setup_logging
@@ -8,12 +8,18 @@ from logger import setup_logging
 def movement_callback(movement: str, data: Dict[str, Any]) -> None:
     """Callback function for movement detection"""
     logger = logging.getLogger('MovementCallback')
-    if movement == "Step Right":
+    if movement == "step_right":
         trigger_right()
         logger.info("right_move")
-    elif movement == "Step Left":
+    elif movement == "step_left":
         trigger_left()
         logger.info("left_move")
+    elif movement == "jump":
+        trigger_up()
+        logger.info("jump_move")
+    elif movement == "bend":
+        trigger_down()
+        logger.info("jump_move")
 
 def main():
     
@@ -31,7 +37,7 @@ def main():
     # Create detector with debug mode enabled
     detector = MovementDetector(
         config=config,
-        useCamera=False,
+        useCamera=True,
         callback=movement_callback,
         isTest=False,
         debug=False
