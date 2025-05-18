@@ -2,8 +2,13 @@ import pygame
 import threading
 import os
 from pathlib import Path
-from src.constants import STEP_RIGHT, STEP_LEFT, JUMP, BEND
+from src.constants import (
+    STEP_RIGHT, STEP_LEFT, JUMP, BEND,
+    FORWARD, BACKWARD,
+    JUMP_SOUND_MOVEMENTS
+)
 import sys
+
 
 
 class SoundManager:
@@ -41,13 +46,26 @@ class SoundManager:
         self.volume = min(1.0, max(0.0, volume))  # Clamp between 0 and 1
         pygame.mixer.music.set_volume(self.volume)
         
-        # Pre-load sounds
-        self.sounds = {
+        # Load base sounds
+        self.base_sounds = {
             STEP_LEFT: self._load_sound("left.mp3"),
             STEP_RIGHT: self._load_sound("right.mp3"),
-            JUMP: self._load_sound("up.mp3"),  # Updated to match movement type
-            BEND: self._load_sound("down.mp3")  # Updated to match movement type
+            JUMP: self._load_sound("up.mp3"),  # Used for JUMP and FORWARD movements
+            BEND: self._load_sound("down.mp3"),
+            FORWARD: self._load_sound("forward.mp3"),
+            BACKWARD: self._load_sound("backward.mp3")
         }
+        
+        # Create the full sounds dictionary with mappings
+        self.sounds = {}
+        
+        # Add base sounds
+        self.sounds.update(self.base_sounds)
+        
+        # Add FORWARD movements to use the "up" sound from JUMP
+        for movement in JUMP_SOUND_MOVEMENTS:
+            if movement != JUMP:  # JUMP is already in the base_sounds
+                self.sounds[movement] = self.base_sounds[JUMP]
         
         # Print loaded sounds status
         for movement, sound in self.sounds.items():
