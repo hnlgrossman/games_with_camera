@@ -1,0 +1,3 @@
+activate ViGEmBus_1.22.0_x64_x86_arm64.exe,
+and after installing the driver restart your computer,
+and open GamesWithCamera.exe
