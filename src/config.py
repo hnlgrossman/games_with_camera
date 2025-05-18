@@ -14,7 +14,7 @@ class MovementConfig:
     cooldown_period: float = 1.0
     stability_threshold: float = 0.028
     stability_moves_threshold = {"jump": 0.01, "bend": 0.01}
-    camera_index: int = 0  # Camera device index to use 
+    camera_index: int = 1  # Camera device index to use 
     visibility_threshold: float = 0.5  # Minimum visibility score for landmarks to be considered
     sound_enabled: bool = False  # Whether to play movement sounds
     sound_volume: float = 0.7  # Sound volume level (0.0 to 1.0)

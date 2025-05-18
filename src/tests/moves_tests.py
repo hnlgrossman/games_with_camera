@@ -64,7 +64,7 @@ def run_movement_tests():
             })
         
         config = MovementConfig(
-            app_name="original"
+            app_name=os.environ.get("APP_NAME")
         )
         # Create and run the movement detector with the callback
         detector = MovementDetector(

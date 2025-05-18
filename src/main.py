@@ -51,7 +51,7 @@ def main():
     config = MovementConfig(
         # camera_index=selected_camera_index,      # MODIFIED: Use selected camera
         # sound_enabled=sound_enabled_choice,  # MODIFIED: Use selected sound preference
-        camera_index=0,      # MODIFIED: Use selected camera
+        camera_index=1,      # MODIFIED: Use selected camera
         sound_enabled=True,  # MODIFIED: Use selected sound preference
         # log_file_path="C:/projects/games_with_camera/moves_logs/multi jump.log",  # Log file will be created in the specified directory
         sound_volume=0.7 # Default sound volume, not configured by welcome screen currently
@@ -64,7 +64,7 @@ def main():
     # Create detector with debug mode enabled
     detector = MovementDetector(
         config=config,
-        useCamera=False,
+        useCamera=True,
         callback=movement_callback,
         isTest=False,
         debug=False

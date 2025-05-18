@@ -25,7 +25,7 @@ class MovementAnalyzer(BaseMovementAnalyzer):
     
     def __init__(self, config: MovementConfig, mp_pose, debug: bool = False):
         super().__init__(config, mp_pose, debug)
-        
+        print(f"MovementAnalyzer __init__: config={config}")
         # Initialize movement detectors
         self.movement_detectors = [
             StepMovement(self, debug=True),
