@@ -14,6 +14,7 @@ LEFT_HIP_INDEX = mp.solutions.pose.PoseLandmark.LEFT_HIP
 RIGHT_HIP_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_HIP
 
 
+
 # Coordinate indices
 X_COORDINATE_INDEX = 0
 Y_COORDINATE_INDEX = 1
@@ -25,3 +26,9 @@ STEP_RIGHT="step_right"
 STEP_LEFT="step_left"
 JUMP="jump"
 BEND="bend"
+FORWARD_RIGHT="forward_right"
+FORWARD_LEFT="forward_left"
+FORWARD = "forward"
+BACKWARD = "backward"
+# Sound mappings - movements that should use the same sound
+JUMP_SOUND_MOVEMENTS = [JUMP, FORWARD_RIGHT, FORWARD_LEFT]

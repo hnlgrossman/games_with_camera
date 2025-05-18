@@ -1,6 +1,8 @@
+import os
 from config import MovementConfig
 from movement_detector import MovementDetector
-from triggers import trigger_left, trigger_right
+from src.constants import STEP_LEFT, STEP_RIGHT, FORWARD, BACKWARD, JUMP, BEND
+from triggers import trigger_left, trigger_right, trigger_up, trigger_down
 from typing import Dict, Any
 import logging
 from logger import setup_logging
@@ -8,20 +10,28 @@ from logger import setup_logging
 def movement_callback(movement: str, data: Dict[str, Any]) -> None:
     """Callback function for movement detection"""
     logger = logging.getLogger('MovementCallback')
-    if movement == "Step Right":
+    if movement == STEP_RIGHT:
         trigger_right()
         logger.info("right_move")
-    elif movement == "Step Left":
+    elif movement == STEP_LEFT:
         trigger_left()
         logger.info("left_move")
+    elif movement == FORWARD or movement == JUMP:
+        trigger_up()
+        logger.info("forward_move")
+    elif movement == BACKWARD or movement == BEND:
+        trigger_down()
+        logger.info("backward_move")
+
 
 def main():
-    
+    print(os.getenv("APP_NAME"))
     # Create config with log file path
     config = MovementConfig(
         # log_file_path="C:/projects/games_with_camera/moves_logs/multi jump.log",  # Log file will be created in the specified directory
         sound_enabled=True,
-        sound_volume=0.7
+        sound_volume=0.7,
+        app_name=os.getenv("APP_NAME")
     )
     # Set up logging first
     setup_logging(config.log_file_path, debug=True)
@@ -34,17 +44,17 @@ def main():
         useCamera=False,
         callback=movement_callback,
         isTest=False,
-        debug=False
+        debug=True
     )
     
-    # video_path = "C:/projects/games_with_camera/recorded_setions/rec_20250512_213129.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_jump_2.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_bend_2.mp4"
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/mix_2.mp4"
-    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/check-z-with-jump.mp4"
+    # video_path = "recorded_setions/rec_20250512_213129.mp4"
+    # video_path = "src/tests/moves_videos/jump_and_fast_left.mp4"
+    # video_path = "src/tests/moves_videos/test_1.mp4"
+    # video_path = "src/tests/moves_videos/jump.mp4"
+    # video_path = "src/tests/moves_videos/multy_jump_2.mp4"
+    # video_path = "src/tests/moves_videos/multy_bend_2.mp4"
+    video_path = "src/tests/moves_videos/dance_map.mp4"
+    # video_path = "src/tests/moves_videos/check-z-with-jump.mp4"
     
     try:
         logger.info("Main logger: Calling detector.start_camera()")

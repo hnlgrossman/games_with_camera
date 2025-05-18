@@ -5,7 +5,10 @@ import time
 import logging
 from typing import Optional, Callable, Dict, Any
 from config import MovementConfig
-from movement_analyzer import MovementAnalyzer
+from importlib import import_module
+
+
+
 from logger import setup_logging
 import os
 from datetime import datetime
@@ -57,8 +60,9 @@ class MovementDetector:
     """Main class for movement detection using camera input"""
     
     def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, callback: Optional[Callable[[str, Dict[str, Any]], None]] = None, debug: bool = False):
-        self.config = config or MovementConfig()
+        self.config = config
         self.pose_detector = PoseDetector(self.config)
+        MovementAnalyzer = import_module(f"src.apps.{self.config.app_name}.movement_analyzer").MovementAnalyzer
         self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose, debug)
         self.frame_counter = 0
         self.useCamera = useCamera
@@ -191,7 +195,7 @@ class MovementDetector:
                 if landmarks:
                     self.pose_detector.draw_landmarks(image, landmarks)
                     # start_time = time.time()
-                    movement = self.movement_analyzer.detect_movement(landmarks)
+                    movement = self.movement_analyzer.check_for_movment(landmarks)
                     # end_time = time.time()
                     # print(f"Movement detection took: {(end_time - start_time) * 1000:.2f} ms")
                     if movement:

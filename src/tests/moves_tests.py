@@ -6,6 +6,7 @@ import os
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '../..')))
 
+from src.config import MovementConfig
 from src.movement_detector import MovementDetector
 from src.constants import STEP_RIGHT, STEP_LEFT, JUMP
 
@@ -62,8 +63,12 @@ def run_movement_tests():
                 "frame": data["frame"]
             })
         
+        config = MovementConfig(
+            app_name="original"
+        )
         # Create and run the movement detector with the callback
         detector = MovementDetector(
+            config=config,
             useCamera=False,
             callback=movement_callback,
             isTest=True
