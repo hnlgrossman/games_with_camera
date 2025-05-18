@@ -6,23 +6,24 @@ import logging
 from logger import setup_logging
 import datetime  # Added import
 from gui_utils import welcome_screen # ADDED: Import the welcome screen function
-
+import os
+from src.constants import STEP_LEFT, STEP_RIGHT, JUMP, BEND, FORWARD, BACKWARD
 
 def movement_callback(movement: str, data: Dict[str, Any]) -> None:
     """Callback function for movement detection"""
     logger = logging.getLogger('MovementCallback')
-    if movement == "step_right":
+    if movement == STEP_RIGHT:
         trigger_right()
         logger.info("right_move")
-    elif movement == "step_left":
+    elif movement == STEP_LEFT:
         trigger_left()
         logger.info("left_move")
-    elif movement == "jump":
+    elif movement == JUMP or movement == FORWARD:
         trigger_up()
         logger.info("jump_move")
-    elif movement == "bend":
+    elif movement == BEND or movement == BACKWARD:
         trigger_down()
-        logger.info("jump_move")
+        logger.info("bend_move")
 
 def main():
     # Date check
@@ -54,7 +55,8 @@ def main():
         camera_index=1,      # MODIFIED: Use selected camera
         sound_enabled=True,  # MODIFIED: Use selected sound preference
         # log_file_path="C:/projects/games_with_camera/moves_logs/multi jump.log",  # Log file will be created in the specified directory
-        sound_volume=0.7 # Default sound volume, not configured by welcome screen currently
+        sound_volume=0.7, # Default sound volume, not configured by welcome screen currently
+        app_name=os.environ.get("APP_NAME")
     )
     # Set up logging first
     setup_logging(config.log_file_path, debug=True)
@@ -70,13 +72,13 @@ def main():
         debug=False
     )
     
-    # video_path = "C:/projects/games_with_camera/recorded_setions/rec_20250512_213129.mp4"
+    video_path = "C:/projects/games_with_camera/recorded_setions/rec_20250518_223313.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_jump_2.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/multy_bend_2.mp4"
-    video_path = "C:/projects/games_with_camera/src/tests/moves_videos/mix_2.mp4"
+    # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/mix_2.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/check-z-with-jump.mp4"
     
     try:

@@ -107,35 +107,10 @@ class MovementAnalyzer(BaseMovementAnalyzer):
                 log_msg += f"Not still (Nose Move): {nose_movement:.4f} (limit: {self.config.stillness_threshold})."
             self.logger.debug(log_msg)
             
-    def _log_debug_info(self, landmarks, landmark_points):
+    def _log_debug_info(self):
         """Override of base class method for custom debug logging"""
         if not self.debug:
             return
-            
-        # Basic landmark position logging
-        nose = landmarks.landmark[NOSE_INDEX]
-        left_foot = landmarks.landmark[LEFT_FOOT_INDEX]
-        right_foot = landmarks.landmark[RIGHT_FOOT_INDEX]
-
-        self.logger.debug(f"Nose position: x={nose.x:.4f}, y={nose.y:.4f}, z={nose.z:.4f}, visibility={nose.visibility:.2f}")
-        self.logger.debug(f"Left foot: x={left_foot.x:.4f}, y={left_foot.y:.4f}, z={left_foot.z:.4f}, visibility={left_foot.visibility:.2f}")
-        self.logger.debug(f"Right foot: x={right_foot.x:.4f}, y={right_foot.y:.4f}, z={right_foot.z:.4f}, visibility={right_foot.visibility:.2f}")
-        
-        # Add debug logs for left and right foot distance and direction
-        left_foot_y_dist, left_foot_y_dir = self.get_points_distance(LEFT_FOOT_INDEX, Y_COORDINATE_INDEX)
-        right_foot_y_dist, right_foot_y_dir = self.get_points_distance(RIGHT_FOOT_INDEX, Y_COORDINATE_INDEX)
-        left_foot_z_dist, left_foot_z_dir = self.get_points_distance(LEFT_FOOT_INDEX, Z_COORDINATE_INDEX)
-        right_foot_z_dist, right_foot_z_dir = self.get_points_distance(RIGHT_FOOT_INDEX, Z_COORDINATE_INDEX)
-        
-        self.logger.debug(f"Left foot Z: distance={left_foot_z_dist:.4f}, direction={'decreasing' if left_foot_z_dir else 'increasing'}")
-        self.logger.debug(f"Right foot Z: distance={right_foot_z_dist:.4f}, direction={'decreasing' if right_foot_z_dir else 'increasing'}")
-        
-        left_shoulder_knee_dist = np.linalg.norm(landmark_points[LEFT_SHOULDER_INDEX] - landmark_points[LEFT_KNEE_INDEX])
-        right_shoulder_knee_dist = np.linalg.norm(landmark_points[RIGHT_SHOULDER_INDEX] - landmark_points[RIGHT_KNEE_INDEX])
-
-        if self.base_height and self.base_height > 1e-6:  # Check if base_height is set and not zero/too small
-            left_percentage = (left_shoulder_knee_dist / self.base_height) * 100
-            right_percentage = (right_shoulder_knee_dist / self.base_height) * 100
             
 
     def map_core_data(self, landmark_points):

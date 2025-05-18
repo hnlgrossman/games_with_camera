@@ -3,7 +3,7 @@ import mediapipe as mp
 import numpy as np
 import time
 import logging
-from typing import Optional, Callable, Dict, Any
+from typing import Optional, Callable, Dict, Any, Tuple
 from config import MovementConfig
 from importlib import import_module
 
@@ -62,6 +62,7 @@ class MovementDetector:
     def __init__(self, config: Optional[MovementConfig] = None, useCamera: bool = True, isTest: bool = False, callback: Optional[Callable[[str, Dict[str, Any]], None]] = None, debug: bool = False):
         self.config = config
         self.pose_detector = PoseDetector(self.config)
+        print(f"MovementDetector __init__: config={self.config.app_name}")
         MovementAnalyzer = import_module(f"src.apps.{self.config.app_name}.movement_analyzer").MovementAnalyzer
         self.movement_analyzer = MovementAnalyzer(self.config, self.pose_detector.mp_pose, debug)
         self.frame_counter = 0
@@ -82,16 +83,83 @@ class MovementDetector:
         self.recording_output_dir = "recorded_setions"
         self.current_recording_filename: Optional[str] = None
 
+        # Effect attributes
+        self.effects_enabled = self.config.effects_enabled if hasattr(self.config, 'effects_enabled') else False
+        self.effect_active = False
+        self.effect_start_time = 0.0
+        self.effect_duration = 0.5  # Effect duration in seconds
+        self.last_movement = ""
+
         # Get logger instance. Configuration is handled by setup_logging in main.py
         self.logger = logging.getLogger('MovementDetector')
-        self.logger.info(f"MovementDetector initialized. Debug mode: {self.debug}")
+        self.logger.info(f"MovementDetector initialized. Debug mode: {self.debug}, Effects enabled: {self.effects_enabled}")
         self.logger.debug("This is a DEBUG message from MovementDetector.")
 
     def process_movement(self, movement: str, data: Dict[str, Any]) -> None:
         """Call the callback function with detected movement"""
         self.logger.info(f"Movement detected: {movement}, Data: {data}")
+        
+        # Activate visual effect only if enabled in config
+        if self.effects_enabled:
+            self.effect_active = True
+            self.effect_start_time = time.time()
+            self.last_movement = movement
+            self.logger.debug(f"Visual effect activated for movement: {movement}")
+        
         if self.callback:
             self.callback(movement, data)
+    
+    def apply_movement_effect(self, image: np.ndarray) -> np.ndarray:
+        """Apply visual effect when movement is detected"""
+        if not self.effect_active:
+            return image
+        
+        # Calculate effect progress (0.0 to 1.0)
+        elapsed = time.time() - self.effect_start_time
+        if elapsed > self.effect_duration:
+            self.effect_active = False
+            return image
+        
+        # Create effect based on progress
+        progress = elapsed / self.effect_duration
+        effect_alpha = 0.7 * (1.0 - progress)  # Fade out effect
+        
+        # Create a copy of the image
+        effect_image = image.copy()
+        
+        # Add colored overlay based on movement
+        overlay = np.zeros_like(image, dtype=np.uint8)
+        height, width = image.shape[:2]
+        
+        # Different color for different movements
+        color = (0, 255, 0)  # Default green
+        
+        # Draw movement name
+        font_scale = 1.5
+        thickness = 3
+        text = self.last_movement.upper()
+        text_size = cv2.getTextSize(text, cv2.FONT_HERSHEY_DUPLEX, font_scale, thickness)[0]
+        text_x = (width - text_size[0]) // 2  # Center horizontally
+        text_y = (height + text_size[1]) // 2  # Center vertically
+        
+        # Create a semi-transparent overlay
+        overlay_alpha = effect_alpha * 0.3  # Reduce overlay opacity
+        cv2.rectangle(overlay, (0, 0), (width, height), color, -1)
+        cv2.addWeighted(overlay, overlay_alpha, effect_image, 1 - overlay_alpha, 0, effect_image)
+        
+        # Add text with increasing size based on progress
+        adjusted_scale = font_scale * (1.0 + (1.0 - progress) * 0.5)
+        cv2.putText(effect_image, text, (text_x, text_y), 
+                    cv2.FONT_HERSHEY_DUPLEX, adjusted_scale, (255, 255, 255), 
+                    thickness, cv2.LINE_AA)
+        
+        # Add a pulsing border
+        border_width = int(10 * (1.0 + np.sin(progress * np.pi * 4) * 0.5))
+        cv2.rectangle(effect_image, (border_width, border_width), 
+                     (width - border_width, height - border_width), 
+                     (255, 255, 255), max(1, border_width // 3))
+        
+        return effect_image
             
     def start_camera(self, video_path: Optional[str] = None) -> None:
         """Start processing video input for movement detection"""
@@ -196,6 +264,8 @@ class MovementDetector:
                     self.pose_detector.draw_landmarks(image, landmarks)
                     # start_time = time.time()
                     movement = self.movement_analyzer.check_for_movment(landmarks)
+                    if self.debug:
+                        image = self.movement_analyzer.process_frame(image)
                     # end_time = time.time()
                     # print(f"Movement detection took: {(end_time - start_time) * 1000:.2f} ms")
                     if movement:
@@ -203,6 +273,9 @@ class MovementDetector:
                 else:
                     if self.frame_counter % 30 == 0: # Log every 30 frames
                         self.logger.warning("No pose landmarks detected. Make sure your full body is visible.")
+                
+                # Apply movement effect if active
+                image = self.apply_movement_effect(image)
                 
                 # Display FPS on the image
                 fps_text = f"FPS: {self.current_fps:.1f}"

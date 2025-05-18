@@ -20,6 +20,8 @@ class MovementConfig:
     sound_volume: float = 0.7  # Sound volume level (0.0 to 1.0)
     log_file_path: Optional[str] = None  # Path to log file, if None logging goes to console
     app_name: str = "original"
+    allow_multiple_movements: bool = False
+    effects_enabled: bool = False  # Whether to show visual effects on movement detection
 
     # New parameters for base_height calculation
     straight_pose_x_spread_threshold: float = 0.15  # Max horizontal spread for key points to be 'straight'
@@ -27,6 +29,13 @@ class MovementConfig:
     min_base_height_threshold: float = 0.4 # Min normalized y-distance (nose to feet) for valid height
 
     def __post_init__(self):
+        if (self.app_name == "original"):
+            self.num_frames_to_check_per_30_fps = 5
+        elif (self.app_name == "dance_map"):
+            self.num_frames_to_check_per_30_fps = 3
+            self.allow_multiple_movements = True
+
+
         if self.min_detection_confidence < 0 or self.min_detection_confidence > 1:
             raise ValueError("min_detection_confidence must be between 0 and 1")
         if self.min_tracking_confidence < 0 or self.min_tracking_confidence > 1:

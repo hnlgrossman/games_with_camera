@@ -185,7 +185,7 @@ class BaseMovementAnalyzer:
 
     def detect_movement(self) -> Optional[str]:
         # Check if any detector is already in motion
-        if any(detector.is_in_motion for detector in self.movement_detectors):
+        if not self.config.allow_multiple_movements and any(detector.is_in_motion for detector in self.movement_detectors):
             if self.debug:
                 self.logger.debug(f"Movement already in motion, skipping detection because of {[detector.name for detector in self.movement_detectors if detector.is_in_motion]}")
             return None
@@ -216,8 +216,15 @@ class BaseMovementAnalyzer:
         self.map_core_data(landmark_points)
 
         self.update_before_detect(landmark_points)
+        self._log_debug_info()
 
         detect_movement = self.detect_movement()
 
         return detect_movement
+    
+    def process_frame(self, frame):
+        return frame
+    
+    def _log_debug_info(self):
+        pass
     
