@@ -1,6 +1,10 @@
 Metadata-Version: 2.1
-Name: games_with_camera
+Name: games-with-camera
 Version: 0.1
-Requires-Dist: opencv-python
-Requires-Dist: mediapipe
-Requires-Dist: numpy
+Summary: UNKNOWN
+Home-page: UNKNOWN
+License: UNKNOWN
+Platform: UNKNOWN
+
+UNKNOWN
+

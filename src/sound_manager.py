@@ -3,6 +3,7 @@ import threading
 import os
 from pathlib import Path
 from src.constants import STEP_RIGHT, STEP_LEFT, JUMP, BEND
+import sys
 
 
 class SoundManager:
@@ -17,8 +18,24 @@ class SoundManager:
         if not pygame.mixer.get_init():
             pygame.mixer.init(frequency=44100)
         
+        # Determine base path for resources
+        if getattr(sys, 'frozen', False) and hasattr(sys, '_MEIPASS'):
+            # Running in a PyInstaller bundle
+            bundle_dir = Path(sys._MEIPASS)
+        else:
+            # Running as a normal script (adjust if your script is run from a different CWD)
+            # Assuming moves_voices is in the project root, and script is run from project root
+            # or that this file (sound_manager.py) is in src/ and moves_voices is at root
+            # For direct script execution, if this file is src/sound_manager.py,
+            # and moves_voices is at the project root:
+            # bundle_dir = Path(__file__).parent.parent
+            # For simplicity with PyInstaller, often easier if data files are relative to EXE.
+            # If moves_voices is intended to be next to the script OR in CWD for script:
+            bundle_dir = Path(".")
+
+
         # Sound file paths
-        self.sound_dir = Path("moves_voices")
+        self.sound_dir = bundle_dir / "moves_voices"
         
         # Set volume (0.0 to 1.0)
         self.volume = min(1.0, max(0.0, volume))  # Clamp between 0 and 1

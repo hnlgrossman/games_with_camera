@@ -11,7 +11,9 @@ out/
 
 # Environment variables
 venv
+venv2
 .venv
+.venv2
 .env
 .env.local
 .env.development.local

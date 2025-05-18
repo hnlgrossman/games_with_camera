@@ -181,6 +181,7 @@ class Controller:
     def _scheduled_release(self, button_name: str):
         """Internal method for release timer callbacks"""
         self.release_button(button_name)
+        print(f"Released button: {button_name}")
         self.update()
         if button_name in self._button_release_timers:
             del self._button_release_timers[button_name]
