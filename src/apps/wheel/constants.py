@@ -1,0 +1,8 @@
+START_RIGHT="start_right"
+START_LEFT="start_left"
+END_RIGHT="end_right"
+END_LEFT="end_left"
+START_UP="start_up"
+START_DOWN="start_down"
+END_UP="end_up"
+END_DOWN="end_down"

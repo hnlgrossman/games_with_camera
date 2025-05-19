@@ -52,7 +52,7 @@ def main():
     config = MovementConfig(
         # camera_index=selected_camera_index,      # MODIFIED: Use selected camera
         # sound_enabled=sound_enabled_choice,  # MODIFIED: Use selected sound preference
-        camera_index=1,      # MODIFIED: Use selected camera
+        camera_index=0,      # MODIFIED: Use selected camera
         sound_enabled=True,  # MODIFIED: Use selected sound preference
         # log_file_path="C:/projects/games_with_camera/moves_logs/multi jump.log",  # Log file will be created in the specified directory
         sound_volume=0.7, # Default sound volume, not configured by welcome screen currently
@@ -69,10 +69,10 @@ def main():
         useCamera=True,
         callback=movement_callback,
         isTest=False,
-        debug=False
+        debug=True
     )
     
-    video_path = "C:/projects/games_with_camera/recorded_setions/rec_20250518_223313.mp4"
+    video_path = "C:/projects/hananel_version/games_with_camera/recorded_setions/rec_20250518_223313.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump_and_fast_left.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/test_1.mp4"
     # video_path = "C:/projects/games_with_camera/src/tests/moves_videos/jump.mp4"

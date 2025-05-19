@@ -14,14 +14,14 @@ class MovementConfig:
     cooldown_period: float = 1.0
     stability_threshold: float = 0.028
     stability_moves_threshold = {"jump": 0.01, "bend": 0.01}
-    camera_index: int = 1  # Camera device index to use 
+    camera_index: int = 0  # Camera device index to use 
     visibility_threshold: float = 0.5  # Minimum visibility score for landmarks to be considered
     sound_enabled: bool = False  # Whether to play movement sounds
     sound_volume: float = 0.7  # Sound volume level (0.0 to 1.0)
     log_file_path: Optional[str] = None  # Path to log file, if None logging goes to console
     app_name: str = "original"
     allow_multiple_movements: bool = False
-    effects_enabled: bool = False  # Whether to show visual effects on movement detection
+    effects_enabled: bool = True  # Whether to show visual effects on movement detection
 
     # New parameters for base_height calculation
     straight_pose_x_spread_threshold: float = 0.15  # Max horizontal spread for key points to be 'straight'
