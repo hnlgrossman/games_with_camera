@@ -34,7 +34,8 @@ class MovementConfig:
         elif (self.app_name == "dance_map"):
             self.num_frames_to_check_per_30_fps = 3
             self.allow_multiple_movements = True
-
+        elif (self.app_name == "wheel"):
+            self.allow_multiple_movements = True
 
         if self.min_detection_confidence < 0 or self.min_detection_confidence > 1:
             raise ValueError("min_detection_confidence must be between 0 and 1")

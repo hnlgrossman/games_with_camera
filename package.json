@@ -3,7 +3,7 @@
   "version": "1.0.0",
   "description": "A project for games using camera input",
   "scripts": {
-    "start": "python src/main.py",
+    "start": "npm run start-original",
     "start-original": "SET APP_NAME=original&& python src/main.py",
     "start-dance-map": "SET APP_NAME=dance_map&& python src/main.py",
     "start-wheel": "SET APP_NAME=wheel&& python src/main.py",

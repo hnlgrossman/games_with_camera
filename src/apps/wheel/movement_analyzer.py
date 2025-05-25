@@ -6,12 +6,13 @@ import mediapipe as mp
 from config import MovementConfig
 
 from .movements.aside_movement import AsideMovement
-from .movements.linear_movement import LinearMovement
+# from .movements.linear_movement import LinearMovement
 
 from src.base_movement_analyzer import BaseMovementAnalyzer
 
 from src.constants import (
-    X_COORDINATE_INDEX, Y_COORDINATE_INDEX
+    X_COORDINATE_INDEX, Y_COORDINATE_INDEX,
+    LEFT_WRIST_INDEX, RIGHT_WRIST_INDEX
 )
 
 class MovementAnalyzer(BaseMovementAnalyzer):
@@ -23,13 +24,27 @@ class MovementAnalyzer(BaseMovementAnalyzer):
         # Initialize movement detectors
         self.movement_detectors = [
             AsideMovement(self, debug),
-            LinearMovement(self, debug)
+            # LinearMovement(self, debug)
+        ]
+
+        self.required_landmarks = [
+            LEFT_WRIST_INDEX,
+            RIGHT_WRIST_INDEX
         ]
 
     def _log_debug_info(self):
         """Override of base class method for custom debug logging"""
         if not self.debug:
             return
+        
+        if self.current_landmark_points is not None:
+            # Log hand locations
+            left_hand_x = self.current_landmark_points[LEFT_WRIST_INDEX][X_COORDINATE_INDEX]
+            left_hand_y = self.current_landmark_points[LEFT_WRIST_INDEX][Y_COORDINATE_INDEX]
+            right_hand_x = self.current_landmark_points[RIGHT_WRIST_INDEX][X_COORDINATE_INDEX]
+            right_hand_y = self.current_landmark_points[RIGHT_WRIST_INDEX][Y_COORDINATE_INDEX]
+            
+            self.logger.debug(f"MovementAnalyzer: hand locations - hand: ({left_hand_y:.3f}, {right_hand_y:.3f})")
 
     def update_is_stable_general(self) -> bool:
         pass

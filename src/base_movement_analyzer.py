@@ -53,6 +53,18 @@ class BaseMovementAnalyzer:
             RIGHT_HEEL_INDEX: [{}, {}, {}],
         }
 
+        self.required_landmarks = [
+            NOSE_INDEX,
+            LEFT_HIP_INDEX,
+            RIGHT_HIP_INDEX,
+            LEFT_FOOT_INDEX,
+            RIGHT_FOOT_INDEX,
+            LEFT_KNEE_INDEX,
+            RIGHT_KNEE_INDEX,
+            LEFT_SHOULDER_INDEX,
+            RIGHT_SHOULDER_INDEX
+        ]
+
         self.movement_type_map: Dict[str, Any] = {}
 
         # FPS adaptation
@@ -125,19 +137,8 @@ class BaseMovementAnalyzer:
         Returns:
             Boolean indicating if all required landmarks are visible and valid
         """
-        required_landmarks = [
-            NOSE_INDEX,
-            LEFT_HIP_INDEX,
-            RIGHT_HIP_INDEX,
-            LEFT_FOOT_INDEX,
-            RIGHT_FOOT_INDEX,
-            LEFT_KNEE_INDEX,
-            RIGHT_KNEE_INDEX,
-            LEFT_SHOULDER_INDEX,
-            RIGHT_SHOULDER_INDEX
-        ]
         
-        for landmark_idx in required_landmarks:
+        for landmark_idx in self.required_landmarks:
             if landmark_idx >= len(landmarks.landmark) or landmarks.landmark[landmark_idx].visibility < self.config.visibility_threshold:
                 return False
         

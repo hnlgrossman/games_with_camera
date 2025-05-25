@@ -13,7 +13,9 @@ RIGHT_SHOULDER_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_SHOULDER
 LEFT_HIP_INDEX = mp.solutions.pose.PoseLandmark.LEFT_HIP
 RIGHT_HIP_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_HIP
 
-
+# Hand landmark indices
+LEFT_WRIST_INDEX = mp.solutions.pose.PoseLandmark.LEFT_WRIST
+RIGHT_WRIST_INDEX = mp.solutions.pose.PoseLandmark.RIGHT_WRIST
 
 # Coordinate indices
 X_COORDINATE_INDEX = 0
