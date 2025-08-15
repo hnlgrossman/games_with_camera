@@ -383,57 +383,169 @@ class ControllerTester:
         
     # Removed _initialize_controller as Controller handles it
 
-    def press_dpad_up(self):
+    def press_dpad_up(self, duration=5.0):
         """Press the D-pad up button"""
-        print("Pressing D-pad UP")
+        print(f"Pressing D-pad UP for {duration} seconds")
         if self.is_xbox:
-            self.controller.press_and_release(XBOX_BUTTON_DPAD_UP)
+            self.controller.press_and_release(XBOX_BUTTON_DPAD_UP, duration)
         else:
-            self.controller.dpad_pulse(DS4_DPAD_UP)
+            self.controller.dpad_pulse(DS4_DPAD_UP, duration)
 
-    def press_dpad_down(self):
+    def press_dpad_down(self, duration=5.0):
         """Press the D-pad down button"""
-        print("Pressing D-pad DOWN")
+        print(f"Pressing D-pad DOWN for {duration} seconds")
         if self.is_xbox:
-            self.controller.press_and_release(XBOX_BUTTON_DPAD_DOWN)
+            self.controller.press_and_release(XBOX_BUTTON_DPAD_DOWN, duration)
         else:
-            self.controller.dpad_pulse(DS4_DPAD_DOWN)
+            self.controller.dpad_pulse(DS4_DPAD_DOWN, duration)
             
-    def press_dpad_left(self):
+    def press_dpad_left(self, duration=5.0):
         """Press the D-pad left button"""
-        print("Pressing D-pad LEFT")
+        print(f"Pressing D-pad LEFT for {duration} seconds")
         if self.is_xbox:
-            self.controller.press_and_release(XBOX_BUTTON_DPAD_LEFT)
+            self.controller.press_and_release(XBOX_BUTTON_DPAD_LEFT, duration)
         else:
-            self.controller.dpad_pulse(DS4_DPAD_LEFT)
+            self.controller.dpad_pulse(DS4_DPAD_LEFT, duration)
             
-    def press_dpad_right(self):
+    def press_dpad_right(self, duration=5.0):
         """Press the D-pad right button"""
-        print("Pressing D-pad RIGHT")
+        print(f"Pressing D-pad RIGHT for {duration} seconds")
         if self.is_xbox:
-            self.controller.press_and_release(XBOX_BUTTON_DPAD_RIGHT)
+            self.controller.press_and_release(XBOX_BUTTON_DPAD_RIGHT, duration)
         else:
-            self.controller.dpad_pulse(DS4_DPAD_RIGHT)
+            self.controller.dpad_pulse(DS4_DPAD_RIGHT, duration)
             
-    def press_button_a_or_cross(self): # Renamed for clarity
+    def press_button_a_or_cross(self, duration=5.0): # Renamed for clarity
         """Press the A (Xbox) or Cross (DS4) button"""
-        print("Pressing A/Cross button")
+        print(f"Pressing A/Cross button for {duration} seconds")
         button_to_press = XBOX_BUTTON_A if self.is_xbox else DS4_BUTTON_CROSS
-        self.controller.press_and_release(button_to_press)
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_button_b_or_circle(self, duration=5.0):
+        """Press the B (Xbox) or Circle (DS4) button"""
+        print(f"Pressing B/Circle button for {duration} seconds")
+        button_to_press = XBOX_BUTTON_B if self.is_xbox else DS4_BUTTON_CIRCLE
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_button_x_or_square(self, duration=5.0):
+        """Press the X (Xbox) or Square (DS4) button"""
+        print(f"Pressing X/Square button for {duration} seconds")
+        button_to_press = XBOX_BUTTON_X if self.is_xbox else DS4_BUTTON_SQUARE
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_button_y_or_triangle(self, duration=5.0):
+        """Press the Y (Xbox) or Triangle (DS4) button"""
+        print(f"Pressing Y/Triangle button for {duration} seconds")
+        button_to_press = XBOX_BUTTON_Y if self.is_xbox else DS4_BUTTON_TRIANGLE
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_left_shoulder(self, duration=5.0):
+        """Press the left shoulder button (LB/L1)"""
+        print(f"Pressing Left Shoulder (LB/L1) for {duration} seconds")
+        button_to_press = XBOX_BUTTON_LB if self.is_xbox else DS4_BUTTON_L1
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_right_shoulder(self, duration=5.0):
+        """Press the right shoulder button (RB/R1)"""
+        print(f"Pressing Right Shoulder (RB/R1) for {duration} seconds")
+        button_to_press = XBOX_BUTTON_RB if self.is_xbox else DS4_BUTTON_R1
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_left_stick_button(self, duration=5.0):
+        """Press the left stick button (LS/L3)"""
+        print(f"Pressing Left Stick Button (LS/L3) for {duration} seconds")
+        button_to_press = XBOX_BUTTON_LS if self.is_xbox else DS4_BUTTON_L3
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_right_stick_button(self, duration=5.0):
+        """Press the right stick button (RS/R3)"""
+        print(f"Pressing Right Stick Button (RS/R3) for {duration} seconds")
+        button_to_press = XBOX_BUTTON_RS if self.is_xbox else DS4_BUTTON_R3
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_start_or_options(self, duration=5.0):
+        """Press the Start (Xbox) or Options (DS4) button"""
+        print(f"Pressing Start/Options button for {duration} seconds")
+        button_to_press = XBOX_BUTTON_START if self.is_xbox else DS4_BUTTON_OPTIONS
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_back_or_share(self, duration=5.0):
+        """Press the Back (Xbox) or Share (DS4) button"""
+        print(f"Pressing Back/Share button for {duration} seconds")
+        button_to_press = XBOX_BUTTON_BACK if self.is_xbox else DS4_BUTTON_SHARE
+        self.controller.press_and_release(button_to_press, duration)
+
+    def press_ps_button(self, duration=5.0):
+        """Press the PS button (DS4 only)"""
+        if not self.is_xbox:
+            print(f"Pressing PS button for {duration} seconds")
+            self.controller.press_and_release(DS4_BUTTON_PS, duration)
+        else:
+            print("PS button not available on Xbox controller")
+
+    def press_touchpad(self, duration=5.0):
+        """Press the touchpad (DS4 only)"""
+        if not self.is_xbox:
+            print(f"Pressing Touchpad for {duration} seconds")
+            self.controller.press_and_release(DS4_BUTTON_TOUCHPAD, duration)
+        else:
+            print("Touchpad not available on Xbox controller")
+
+    def test_left_trigger(self, duration=5.0):
+        """Test the left trigger"""
+        print(f"Testing Left Trigger for {duration} seconds")
+        self.controller.trigger_pulse(True, 1.0, duration)
+
+    def test_right_trigger(self, duration=5.0):
+        """Test the right trigger"""
+        print(f"Testing Right Trigger for {duration} seconds")
+        self.controller.trigger_pulse(False, 1.0, duration)
             
-    def analog_left_stick(self, x_value=-0.7, y_value=0.0):
+    def analog_left_stick(self, x_value=-0.7, y_value=0.0, duration=5.0):
         """Move the left analog stick"""
         direction = "LEFT" if x_value < 0 else "RIGHT" if x_value > 0 else "NEUTRAL X"
         direction_y = "UP" if y_value > 0 else "DOWN" if y_value < 0 else "NEUTRAL Y"
-        print(f"Moving left stick {direction} / {direction_y}")
-        self.controller.joystick_pulse(True, x_value, y_value)
+        print(f"Moving left stick {direction} / {direction_y} for {duration} seconds")
+        self.controller.joystick_pulse(True, x_value, y_value, duration)
         
-    def analog_right_stick(self, x_value=0.7, y_value=0.0):
+    def analog_right_stick(self, x_value=0.7, y_value=0.0, duration=5.0):
         """Move the right analog stick"""
         direction = "LEFT" if x_value < 0 else "RIGHT" if x_value > 0 else "NEUTRAL X"
         direction_y = "UP" if y_value > 0 else "DOWN" if y_value < 0 else "NEUTRAL Y"
-        print(f"Moving right stick {direction} / {direction_y}")
-        self.controller.joystick_pulse(False, x_value, y_value)
+        print(f"Moving right stick {direction} / {direction_y} for {duration} seconds")
+        self.controller.joystick_pulse(False, x_value, y_value, duration)
+
+    def test_left_stick_up(self, duration=5.0):
+        """Move left stick up"""
+        self.analog_left_stick(0.0, 0.8, duration)
+
+    def test_left_stick_down(self, duration=5.0):
+        """Move left stick down"""
+        self.analog_left_stick(0.0, -0.8, duration)
+
+    def test_left_stick_left(self, duration=5.0):
+        """Move left stick left"""
+        self.analog_left_stick(-0.8, 0.0, duration)
+
+    def test_left_stick_right(self, duration=5.0):
+        """Move left stick right"""
+        self.analog_left_stick(0.8, 0.0, duration)
+
+    def test_right_stick_up(self, duration=5.0):
+        """Move right stick up"""
+        self.analog_right_stick(0.0, 0.8, duration)
+
+    def test_right_stick_down(self, duration=5.0):
+        """Move right stick down"""
+        self.analog_right_stick(0.0, -0.8, duration)
+
+    def test_right_stick_left(self, duration=5.0):
+        """Move right stick left"""
+        self.analog_right_stick(-0.8, 0.0, duration)
+
+    def test_right_stick_right(self, duration=5.0):
+        """Move right stick right"""
+        self.analog_right_stick(0.8, 0.0, duration)
         
     def left_stick_delayed_up(self):
         """Move the left stick up for 5 seconds after a 1-second delay"""
@@ -568,51 +680,180 @@ def run_gui_test(controller_type="xbox360"):
         tester = ControllerTester(controller_type)
         
         root = tk.Tk()
-        root.title("Controller Test")
-        root.geometry("400x400")
+        root.title("Comprehensive Controller Test")
+        root.geometry("900x700")
+        
+        # Status indicator (declare early so delayed_action can reference it)
+        status_label = ttk.Label(root, text="Ready to test - Each button test lasts 5 seconds", font=("Arial", 10))
+        
+        def delayed_action(action_func):
+            """Wrapper to add 1-second delay before executing action"""
+            def wrapper():
+                # Update status to show waiting
+                status_label.config(text="Action starting in 1 second...")
+                root.update()
+                
+                # Schedule the actual action after 1 second
+                def execute_action():
+                    status_label.config(text="Executing action...")
+                    root.update()
+                    action_func()
+                    # Reset status after action
+                    root.after(100, lambda: status_label.config(text="Ready to test - Each button test lasts 5 seconds"))
+                
+                root.after(1000, execute_action)  # 1000ms = 1 second delay
+            return wrapper
         
         # Controller type indicator
         controller_type_str = "Xbox 360" if tester.is_xbox else "DualShock 4"
-        ttk.Label(root, text=f"Testing {controller_type_str} Controller", font=("Arial", 14)).pack(pady=10)
+        title_label = ttk.Label(root, text=f"Testing {controller_type_str} Controller", font=("Arial", 16, "bold"))
+        title_label.pack(pady=10)
         
         # Instructions
-        ttk.Label(root, text="1. Launch your game", font=("Arial", 10)).pack(anchor="w", padx=20)
-        ttk.Label(root, text="2. Make sure controller input is enabled", font=("Arial", 10)).pack(anchor="w", padx=20)
-        ttk.Label(root, text="3. Press buttons below to test", font=("Arial", 10)).pack(anchor="w", padx=20)
+        instructions_frame = ttk.Frame(root)
+        instructions_frame.pack(pady=5)
+        ttk.Label(instructions_frame, text="1. Launch your game", font=("Arial", 10)).pack(anchor="w")
+        ttk.Label(instructions_frame, text="2. Make sure controller input is enabled", font=("Arial", 10)).pack(anchor="w")
+        ttk.Label(instructions_frame, text="3. Press buttons below to test (each test lasts 5 seconds)", font=("Arial", 10)).pack(anchor="w")
         
-        # Individual button tests
-        button_frame = ttk.Frame(root)
-        button_frame.pack(pady=20, fill="x")
+        # Create a scrollable frame
+        canvas = tk.Canvas(root)
+        scrollbar = ttk.Scrollbar(root, orient="vertical", command=canvas.yview)
+        scrollable_frame = ttk.Frame(canvas)
         
-        ttk.Button(button_frame, text="D-Pad Left", command=tester.press_dpad_left).grid(row=0, column=0, padx=5, pady=5)
-        ttk.Button(button_frame, text="D-Pad Right", command=tester.press_dpad_right).grid(row=0, column=1, padx=5, pady=5)
-        ttk.Button(button_frame, text="A/Cross Button", command=tester.press_button_a_or_cross).grid(row=0, column=2, padx=5, pady=5) # Updated command
-        ttk.Button(button_frame, text="D-Pad Up", command=tester.press_dpad_up).grid(row=0, column=3, padx=5, pady=5) # New button
-        ttk.Button(button_frame, text="D-Pad Down", command=tester.press_dpad_down).grid(row=0, column=4, padx=5, pady=5) # New button
+        scrollable_frame.bind(
+            "<Configure>",
+            lambda e: canvas.configure(scrollregion=canvas.bbox("all"))
+        )
         
-        ttk.Button(button_frame, text="Left Stick Left", 
-                  command=lambda: tester.analog_left_stick(x_value=-0.7)).grid(row=1, column=0, padx=5, pady=5)
-        ttk.Button(button_frame, text="Left Stick Right", 
-                  command=lambda: tester.analog_left_stick(x_value=0.7)).grid(row=1, column=1, padx=5, pady=5)
-        ttk.Button(button_frame, text="Right Stick Right", 
-                  command=lambda: tester.analog_right_stick(x_value=0.7)).grid(row=1, column=2, padx=5, pady=5)
-        ttk.Button(button_frame, text="Left Stick Delayed Up", 
-                  command=tester.left_stick_delayed_up).grid(row=1, column=3, padx=5, pady=5)
+        canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+        canvas.configure(yscrollcommand=scrollbar.set)
+        
+        # Face Buttons Section
+        face_buttons_frame = ttk.LabelFrame(scrollable_frame, text="Face Buttons (5 sec each)")
+        face_buttons_frame.pack(pady=10, fill="x", padx=20)
+        
+        face_grid = ttk.Frame(face_buttons_frame)
+        face_grid.pack(pady=5)
+        
+        if tester.is_xbox:
+            ttk.Button(face_grid, text="A", command=delayed_action(tester.press_button_a_or_cross), width=8).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(face_grid, text="B", command=delayed_action(tester.press_button_b_or_circle), width=8).grid(row=0, column=1, padx=5, pady=5)
+            ttk.Button(face_grid, text="X", command=delayed_action(tester.press_button_x_or_square), width=8).grid(row=0, column=2, padx=5, pady=5)
+            ttk.Button(face_grid, text="Y", command=delayed_action(tester.press_button_y_or_triangle), width=8).grid(row=0, column=3, padx=5, pady=5)
+        else:
+            ttk.Button(face_grid, text="Cross", command=delayed_action(tester.press_button_a_or_cross), width=8).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(face_grid, text="Circle", command=delayed_action(tester.press_button_b_or_circle), width=8).grid(row=0, column=1, padx=5, pady=5)
+            ttk.Button(face_grid, text="Square", command=delayed_action(tester.press_button_x_or_square), width=8).grid(row=0, column=2, padx=5, pady=5)
+            ttk.Button(face_grid, text="Triangle", command=delayed_action(tester.press_button_y_or_triangle), width=8).grid(row=0, column=3, padx=5, pady=5)
+        
+        # D-Pad Section
+        dpad_frame = ttk.LabelFrame(scrollable_frame, text="D-Pad (5 sec each)")
+        dpad_frame.pack(pady=10, fill="x", padx=20)
+        
+        dpad_grid = ttk.Frame(dpad_frame)
+        dpad_grid.pack(pady=5)
+        
+        ttk.Button(dpad_grid, text="Up", command=delayed_action(tester.press_dpad_up), width=8).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(dpad_grid, text="Left", command=delayed_action(tester.press_dpad_left), width=8).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(dpad_grid, text="Right", command=delayed_action(tester.press_dpad_right), width=8).grid(row=1, column=2, padx=5, pady=5)
+        ttk.Button(dpad_grid, text="Down", command=delayed_action(tester.press_dpad_down), width=8).grid(row=2, column=1, padx=5, pady=5)
+        
+        # Shoulder Buttons Section
+        shoulder_frame = ttk.LabelFrame(scrollable_frame, text="Shoulder Buttons (5 sec each)")
+        shoulder_frame.pack(pady=10, fill="x", padx=20)
+        
+        shoulder_grid = ttk.Frame(shoulder_frame)
+        shoulder_grid.pack(pady=5)
+        
+        if tester.is_xbox:
+            ttk.Button(shoulder_grid, text="LB", command=delayed_action(tester.press_left_shoulder), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(shoulder_grid, text="RB", command=delayed_action(tester.press_right_shoulder), width=12).grid(row=0, column=1, padx=5, pady=5)
+        else:
+            ttk.Button(shoulder_grid, text="L1", command=delayed_action(tester.press_left_shoulder), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(shoulder_grid, text="R1", command=delayed_action(tester.press_right_shoulder), width=12).grid(row=0, column=1, padx=5, pady=5)
+        
+        # Triggers Section
+        triggers_frame = ttk.LabelFrame(scrollable_frame, text="Triggers (5 sec each)")
+        triggers_frame.pack(pady=10, fill="x", padx=20)
+        
+        triggers_grid = ttk.Frame(triggers_frame)
+        triggers_grid.pack(pady=5)
+        
+        if tester.is_xbox:
+            ttk.Button(triggers_grid, text="LT", command=delayed_action(tester.test_left_trigger), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(triggers_grid, text="RT", command=delayed_action(tester.test_right_trigger), width=12).grid(row=0, column=1, padx=5, pady=5)
+        else:
+            ttk.Button(triggers_grid, text="L2", command=delayed_action(tester.test_left_trigger), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(triggers_grid, text="R2", command=delayed_action(tester.test_right_trigger), width=12).grid(row=0, column=1, padx=5, pady=5)
+        
+        # Left Stick Section
+        left_stick_frame = ttk.LabelFrame(scrollable_frame, text="Left Analog Stick (5 sec each)")
+        left_stick_frame.pack(pady=10, fill="x", padx=20)
+        
+        left_stick_grid = ttk.Frame(left_stick_frame)
+        left_stick_grid.pack(pady=5)
+        
+        ttk.Button(left_stick_grid, text="Up", command=delayed_action(tester.test_left_stick_up), width=8).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(left_stick_grid, text="Left", command=delayed_action(tester.test_left_stick_left), width=8).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(left_stick_grid, text="Press", command=delayed_action(tester.press_left_stick_button), width=8).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Button(left_stick_grid, text="Right", command=delayed_action(tester.test_left_stick_right), width=8).grid(row=1, column=2, padx=5, pady=5)
+        ttk.Button(left_stick_grid, text="Down", command=delayed_action(tester.test_left_stick_down), width=8).grid(row=2, column=1, padx=5, pady=5)
+        
+        # Right Stick Section
+        right_stick_frame = ttk.LabelFrame(scrollable_frame, text="Right Analog Stick (5 sec each)")
+        right_stick_frame.pack(pady=10, fill="x", padx=20)
+        
+        right_stick_grid = ttk.Frame(right_stick_frame)
+        right_stick_grid.pack(pady=5)
+        
+        ttk.Button(right_stick_grid, text="Up", command=delayed_action(tester.test_right_stick_up), width=8).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(right_stick_grid, text="Left", command=delayed_action(tester.test_right_stick_left), width=8).grid(row=1, column=0, padx=5, pady=5)
+        ttk.Button(right_stick_grid, text="Press", command=delayed_action(tester.press_right_stick_button), width=8).grid(row=1, column=1, padx=5, pady=5)
+        ttk.Button(right_stick_grid, text="Right", command=delayed_action(tester.test_right_stick_right), width=8).grid(row=1, column=2, padx=5, pady=5)
+        ttk.Button(right_stick_grid, text="Down", command=delayed_action(tester.test_right_stick_down), width=8).grid(row=2, column=1, padx=5, pady=5)
+        
+        # System Buttons Section
+        system_frame = ttk.LabelFrame(scrollable_frame, text="System Buttons (5 sec each)")
+        system_frame.pack(pady=10, fill="x", padx=20)
+        
+        system_grid = ttk.Frame(system_frame)
+        system_grid.pack(pady=5)
+        
+        if tester.is_xbox:
+            ttk.Button(system_grid, text="Start", command=delayed_action(tester.press_start_or_options), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(system_grid, text="Back", command=delayed_action(tester.press_back_or_share), width=12).grid(row=0, column=1, padx=5, pady=5)
+        else:
+            ttk.Button(system_grid, text="Options", command=delayed_action(tester.press_start_or_options), width=12).grid(row=0, column=0, padx=5, pady=5)
+            ttk.Button(system_grid, text="Share", command=delayed_action(tester.press_back_or_share), width=12).grid(row=0, column=1, padx=5, pady=5)
+            ttk.Button(system_grid, text="PS", command=delayed_action(tester.press_ps_button), width=12).grid(row=1, column=0, padx=5, pady=5)
+            ttk.Button(system_grid, text="Touchpad", command=delayed_action(tester.press_touchpad), width=12).grid(row=1, column=1, padx=5, pady=5)
         
         # Sequence tests
-        sequence_frame = ttk.LabelFrame(root, text="Automated Tests")
+        sequence_frame = ttk.LabelFrame(scrollable_frame, text="Automated Tests")
         sequence_frame.pack(pady=10, fill="x", padx=20)
         
-        ttk.Button(sequence_frame, text="Start Left-Right D-Pad Sequence", 
-                  command=tester.start_left_right_sequence).pack(fill="x", padx=5, pady=5)
-        ttk.Button(sequence_frame, text="Start Left-Right Analog Sequence", 
-                  command=tester.start_left_right_analog_sequence).pack(fill="x", padx=5, pady=5)
-        ttk.Button(sequence_frame, text="Stop Sequence", 
-                  command=tester.stop_sequence).pack(fill="x", padx=5, pady=5)
+        sequence_grid = ttk.Frame(sequence_frame)
+        sequence_grid.pack(pady=5)
         
-        # Status indicator
-        status_label = ttk.Label(root, text="Ready to test", font=("Arial", 10))
+        ttk.Button(sequence_grid, text="Start Left-Right D-Pad Sequence", 
+                  command=delayed_action(tester.start_left_right_sequence), width=25).grid(row=0, column=0, padx=5, pady=5)
+        ttk.Button(sequence_grid, text="Start Left-Right Analog Sequence", 
+                  command=delayed_action(tester.start_left_right_analog_sequence), width=25).grid(row=0, column=1, padx=5, pady=5)
+        ttk.Button(sequence_grid, text="Stop Sequence", 
+                  command=delayed_action(tester.stop_sequence), width=15).grid(row=1, column=0, padx=5, pady=5)
+        
+        # Pack the canvas and scrollbar
+        canvas.pack(side="left", fill="both", expand=True, padx=(20, 0))
+        scrollbar.pack(side="right", fill="y")
+        
+        # Pack the status label that was declared earlier
         status_label.pack(pady=10)
+        
+        # Bind mousewheel to canvas
+        def _on_mousewheel(event):
+            canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+        canvas.bind_all("<MouseWheel>", _on_mousewheel)
         
         # Start UI
         root.mainloop()

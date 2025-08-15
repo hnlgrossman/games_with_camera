@@ -14,7 +14,7 @@ class AsideMovement(BaseMovement):
 
     def __init__(self, analyzer: 'MovementAnalyzer', debug: bool = False):
         super().__init__(analyzer, debug)
-        self.START_THRESHOLD = 0.05
+        self.START_THRESHOLD = 0.1
         self.END_THRESHOLD = 0.05  # User: "when the handes y diff is less then 0.5"
         self.current_motion_state: str = self.STATE_IDLE
         # print(f"AsideMovement.__init__: initialized - start_thresh: {self.START_THRESHOLD}, end_thresh: {self.END_THRESHOLD}, initial_state: {self.current_motion_state}")
